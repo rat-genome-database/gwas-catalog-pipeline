@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Parser {
-
+    int cnt = 0;
     public ArrayList<GWASCatalog> parse(String myFile) throws Exception
     {
         ArrayList<GWASCatalog> list = new ArrayList<>();
@@ -17,7 +17,7 @@ public class Parser {
         String lineData;
         String[] col = null;
         ArrayList<String> columns = new ArrayList<>();
-        int cnt = 0, i = 0,riskAllele=0;
+        int i = 0,riskAllele=0;
         while((lineData = br.readLine()) != null)
         {
             if (i==0)
@@ -34,7 +34,7 @@ public class Parser {
 
             i++;
         }
-
+        System.out.println(cnt);
         return list;
     }
     GWASCatalog parseLine(String lineData, int riskAllele, ArrayList<String> columns) throws Exception
@@ -138,6 +138,8 @@ public class Parser {
                         String variant = "";
                         for (int j = 0; j < alleles.length; j++){
                             String[] allele = alleles[j].split("-");
+                            if (allele[allele.length - 1].equals("?"))
+                                cnt++;
                             if (j != alleles.length-1)
                                 variant += allele[allele.length - 1]+"/";
                             else
