@@ -1,5 +1,6 @@
 package edu.mcw.rgd.gwascatalog;
 
+import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.FileDownloader;
 import org.apache.log4j.Logger;
 
@@ -15,14 +16,15 @@ public class GWASCatImport {
     {
         logger.info(getVersion());
         String myFile = downloadFile(gwasFile);
-        // create new method
         Parser parser = new Parser();
         ArrayList<GWASCatalog> incoming = parser.parse(myFile);
-
         // send incoming to method and check with DB
-
+        insertDeleteData(incoming);
     }
 
+    void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
+
+    }
 
     String downloadFile(String file) throws Exception{
         FileDownloader downloader = new FileDownloader();

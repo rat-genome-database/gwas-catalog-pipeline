@@ -1,12 +1,16 @@
 package edu.mcw.rgd.gwascatalog;
 
+import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.Utils;
 
 import java.io.BufferedReader;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Parser {
     int cnt = 0;
@@ -25,31 +29,49 @@ public class Parser {
                 col = lineData.split("\t");
                 columns = new ArrayList<String>(Arrays.asList(col));
                 riskAllele = columns.indexOf("STRONGEST SNP-RISK ALLELE");
-                System.out.println(riskAllele);
+//                System.out.println(riskAllele);
             }
             else
             {
-                list.add(parseLine(lineData,riskAllele, columns));
+                GWASCatalog gc = parseLine(lineData,riskAllele, columns);
+                // check if there are multiple rsids then create a shallow copy with the separate data
+                // list.addAll(new list that is made) or
+                ArrayList<GWASCatalog> splitData = copiedData(gc);
+                list.addAll(splitData);
             }
 
             i++;
         }
-        System.out.println(cnt);
+        System.out.println(list.size());
         return list;
     }
+
+    ArrayList<GWASCatalog> copiedData(GWASCatalog gc) throws Exception {
+        ArrayList<GWASCatalog> shallow = new ArrayList<>();
+        if (gc.getChr().isEmpty())
+            shallow.add(gc);
+        else {
+            String[] listChr = gc.getChr().split(";");
+            String[] listPos = gc.getPos().split(";");
+            String[] riskAllele = gc.getStrongSnpRiskallele().split("/");
+            String[] snps = gc.getSnps().split(";");
+            for (int i = 0; i < listChr.length; i++) {
+                GWASCatalog carbon = new GWASCatalog(gc, listChr[i],listPos[i],riskAllele[i],snps[i]);
+                System.out.println(gc.print());
+                shallow.add(carbon);
+            }
+        }
+        return shallow;
+    }
+
     GWASCatalog parseLine(String lineData, int riskAllele, ArrayList<String> columns) throws Exception
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 //        System.out.println(lineData);
         GWASCatalog gc = new GWASCatalog();
         String[] row = lineData.split("\t");
         for (int i = 0; i < row.length; i++) {
             switch (columns.get(i)){
                 case "DATE ADDED TO CATALOG":
-                    //System.out.print(row[i]+"|");
-                    java.util.Date date = sdf.parse(row[i]);
-                    Date sqlDate = new Date(date.getTime());
-                    gc.setAdded(sqlDate);
                     break;
                 case "PUBMEDID":
                     //System.out.print(row[i]+"|");
@@ -57,26 +79,14 @@ public class Parser {
                     gc.setPmid("PMID:"+pmid);
                     break;
                 case "FIRST AUTHOR":
-                    //System.out.print(row[i]+"|");
-                    gc.setAuthor(row[i]);
                     break;
                 case "DATE":
-                    //System.out.print(row[i]+"|");
-                    java.util.Date date1 = sdf.parse(row[i]);
-                    Date sqlDate1 = new Date(date1.getTime());
-                    gc.setDate(sqlDate1);
                     break;
                 case "JOURNAL":
-                    //System.out.print(row[i]+"|");
-                    gc.setJournal(row[i]);
                     break;
                 case "LINK":
-                    //System.out.print(row[i]+"|");
-                    gc.setLink(row[i]);
                     break;
                 case "STUDY":
-                    //System.out.print(row[i]+"|");
-                    gc.setStudy(row[i]);
                     break;
                 case "DISEASE/TRAIT":
                     //System.out.print(row[i]+"|");
@@ -111,35 +121,24 @@ public class Parser {
                     gc.setMappedGene(row[i]);
                     break;
                 case "UPSTREAM_GENE_ID":
-                    //System.out.print(row[i]+"|");
-                    gc.setUpstreamGeneId(row[i]);
                     break;
                 case "DOWNSTREAM_GENE_ID":
-                    //System.out.print(row[i]+"|");
-                    gc.setDownstreamGeneId(row[i]);
                     break;
                 case "SNP_GENE_IDS":
                     //System.out.print(row[i]+"|");
                     gc.setSnpGeneId(row[i]);
                     break;
                 case "UPSTREAM_GENE_DISTANCE":
-                    //System.out.print(row[i]+"|");
-                    gc.setUpstreamDistance(row[i]);
                     break;
                 case "DOWNSTREAM_GENE_DISTANCE":
-                    //System.out.print(row[i]+"|");
-                    gc.setDownstreamDistance(row[i]);
                     break;
                 case "STRONGEST SNP-RISK ALLELE":
                     //System.out.print(row[i]+"|");
-                    // try split with ";", then insert like X/Y
                     try {
                         String[] alleles = row[riskAllele].split(";");
                         String variant = "";
                         for (int j = 0; j < alleles.length; j++){
                             String[] allele = alleles[j].split("-");
-                            if (allele[allele.length - 1].equals("?"))
-                                cnt++;
                             if (j != alleles.length-1)
                                 variant += allele[allele.length - 1]+"/";
                             else
@@ -157,8 +156,6 @@ public class Parser {
                     gc.setSnps(row[i]);
                     break;
                 case "MERGED":
-                    //System.out.print(row[i]+"|");
-                    gc.setMerge(Integer.parseInt(row[i]));
                     break;
                 case "SNP_ID_CURRENT":
                     //System.out.print(row[i]+"|");
@@ -169,8 +166,6 @@ public class Parser {
                     gc.setContext(row[i]);
                     break;
                 case "INTERGENIC":
-                    //System.out.print(row[i]+"|");
-                    gc.setIntergenic(row[i]);
                     break;
                 case "RISK ALLELE FREQUENCY":
                     //System.out.print(row[i]+"|");
@@ -178,31 +173,24 @@ public class Parser {
                     break;
                 case "P-VALUE":
                     //System.out.print(row[i]+"|");
-                    gc.setpVal(Double.parseDouble(row[i]));
+                    gc.setpVal(row[i]);
                     break;
                 case "PVALUE_MLOG":
                     //System.out.print(row[i]+"|");
-                    gc.setpValMlog(Double.parseDouble(row[i]));
+                    BigDecimal d = new BigDecimal(row[i], MathContext.DECIMAL64);
+                    gc.setpValMlog(d);
                     break;
                 case "P-VALUE (TEXT)":
-                    //System.out.print(row[i]+"|");
-                    gc.setpValTxt(row[i]);
                     break;
                 case "OR or BETA":
-                    //System.out.print(row[i]+"|");
-                    gc.setOrBeta(row[i]);
                     break;
                 case "95% CI (TEXT)":
-                    //System.out.print(row[i]+"|");
-                    gc.setCi95(row[i]);
                     break;
                 case "PLATFORM [SNPS PASSING QC]":
                     //System.out.print(row[i]+"|");
-                    gc.setPlatform(row[i]);
+                    gc.setSnpPassQc(row[i]);
                     break;
                 case "CNV":
-                    //System.out.print(row[i]+"|");
-                    gc.setCnv(row[i]);
                     break;
                 case "MAPPED_TRAIT":
                     //System.out.print(row[i]+"|");
@@ -210,15 +198,23 @@ public class Parser {
                     break;
                 case "MAPPED_TRAIT_URI":
                     //System.out.print(row[i]+"|");
-                    gc.setMapTraitUri(row[i]);
+                    // only get EFO Id
+                    String[] urls = row[i].split(",");
+                    String efoId = "";
+                    for (int j = 0; j < urls.length; j++){
+                        String[] efo = urls[j].split("/");
+                        if (j == urls.length-1)
+                            efoId += efo[efo.length-1];
+                        else
+                            efoId += (efo[efo.length-1]+", ");
+                    }
+                    gc.setEfoId(efoId);
                     break;
                 case "STUDY ACCESSION":
                     //System.out.print(row[i]+"|");
                     gc.setStudyAcc(row[i]);
                     break;
                 case "GENOTYPING TECHNOLOGY":
-                    //System.out.print(row[i]+"|");
-                    gc.setGenotypeTech(row[i]);
                     break;
                 default:
                     System.out.print(row[i]);

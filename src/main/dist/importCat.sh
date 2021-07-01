@@ -3,7 +3,7 @@
 # GWAS Catalog import pipeline
 #
 . /etc/profile
-APPNAME=GwasCatalogPipeline
+APPNAME="gwas-catalog-pipeline"
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
 
 APPDIR=/home/rgddata/pipelines/$APPNAME
