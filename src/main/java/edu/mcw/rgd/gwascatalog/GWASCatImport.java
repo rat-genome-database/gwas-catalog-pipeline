@@ -22,11 +22,15 @@ public class GWASCatImport {
         logger.info(getVersion());
         String myFile = downloadFile(gwasFile);
         Parser parser = new Parser();
-        ArrayList<GWASCatalog> incoming = parser.parse(myFile);
-        logger.info("- - Total objects coming in: "+incoming.size());
-        // send incoming to method and check with DB
-        insertDeleteData(incoming);
-
+        try {
+            ArrayList<GWASCatalog> incoming = parser.parse(myFile);
+            logger.info("- - Total objects coming in: "+incoming.size());
+            // send incoming to method and check with DB
+            insertDeleteData(incoming);
+        }
+        catch (Exception e){
+            logger.info(e);
+        }
     }
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{

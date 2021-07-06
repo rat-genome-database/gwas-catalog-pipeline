@@ -22,26 +22,32 @@ public class Parser {
         String[] col = null;
         ArrayList<String> columns = new ArrayList<>();
         int i = 0,riskAllele=0;
-        while((lineData = br.readLine()) != null)
-        {
-            if (i==0)
-            {
-                col = lineData.split("\t");
-                columns = new ArrayList<String>(Arrays.asList(col));
-                riskAllele = columns.indexOf("STRONGEST SNP-RISK ALLELE");
+        try {
+            while ((lineData = br.readLine()) != null) {
+                if (i == 0) {
+                    col = lineData.split("\t");
+                    columns = new ArrayList<String>(Arrays.asList(col));
+                    riskAllele = columns.indexOf("STRONGEST SNP-RISK ALLELE");
 //                System.out.println(riskAllele);
-            }
-            else // if (i < 30)
-            {
-                GWASCatalog gc = parseLine(lineData,riskAllele, columns);
-                ArrayList<GWASCatalog> splitData = copiedData(gc);
-                if (splitData != null)
-                    list.addAll(splitData);
-            }
+                } else // if (i < 30)
+                {
+                    GWASCatalog gc = parseLine(lineData, riskAllele, columns);
+                    ArrayList<GWASCatalog> splitData = copiedData(gc);
+                    if (splitData != null)
+                        list.addAll(splitData);
+                }
 
-            i++;
+                i++;
+            }
         }
-        br.close();
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        finally {
+            br.close();
+        }
+
+
 //        System.out.println(list.size());
 //        System.out.println(cnt);
         return list;
