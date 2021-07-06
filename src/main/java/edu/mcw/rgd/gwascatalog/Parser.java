@@ -31,24 +31,29 @@ public class Parser {
                 riskAllele = columns.indexOf("STRONGEST SNP-RISK ALLELE");
 //                System.out.println(riskAllele);
             }
-            else
+            else // if (i < 30)
             {
                 GWASCatalog gc = parseLine(lineData,riskAllele, columns);
-                // check if there are multiple rsids then create a shallow copy with the separate data
-                // list.addAll(new list that is made) or
                 ArrayList<GWASCatalog> splitData = copiedData(gc);
-                list.addAll(splitData);
+                if (splitData != null)
+                    list.addAll(splitData);
             }
 
             i++;
         }
         System.out.println(list.size());
+//        System.out.println(cnt);
         return list;
     }
 
     ArrayList<GWASCatalog> copiedData(GWASCatalog gc) throws Exception {
         ArrayList<GWASCatalog> shallow = new ArrayList<>();
-        if (gc.getChr().isEmpty())
+        String[] posX =gc.getPos().split("x");
+        if (posX.length > 1) {
+//            System.out.println(gc.print());
+            return null;
+        }
+        else if (gc.getSnps().isEmpty())
             shallow.add(gc);
         else {
             String[] listChr = gc.getChr().split(";");
@@ -57,7 +62,7 @@ public class Parser {
             String[] snps = gc.getSnps().split(";");
             for (int i = 0; i < listChr.length; i++) {
                 GWASCatalog carbon = new GWASCatalog(gc, listChr[i],listPos[i],riskAllele[i],snps[i]);
-                System.out.println(gc.print());
+//                System.out.println(gc.print());
                 shallow.add(carbon);
             }
         }
