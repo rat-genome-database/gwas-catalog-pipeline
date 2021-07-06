@@ -41,15 +41,15 @@ public class Parser {
 
             i++;
         }
-        System.out.println(list.size());
+        br.close();
+//        System.out.println(list.size());
 //        System.out.println(cnt);
         return list;
     }
 
     ArrayList<GWASCatalog> copiedData(GWASCatalog gc) throws Exception {
         ArrayList<GWASCatalog> shallow = new ArrayList<>();
-        String[] posX =gc.getPos().split("x");
-        if (posX.length > 1) {
+        if (gc.getPos().contains("x")) {
 //            System.out.println(gc.print());
             return null;
         }
