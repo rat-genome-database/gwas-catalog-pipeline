@@ -188,8 +188,8 @@ public class Parser {
                     break;
                 case "PVALUE_MLOG":
                     //System.out.print(row[i]+"|");
-                    BigDecimal d = new BigDecimal(row[i], MathContext.DECIMAL64);
-                    gc.setpValMlog(d);
+                    //BigDecimal d = new BigDecimal(row[i], MathContext.DECIMAL64).stripTrailingZeros();
+                    gc.setpValMlog(Double.parseDouble(row[i]));
                     break;
                 case "P-VALUE (TEXT)":
                     break;
