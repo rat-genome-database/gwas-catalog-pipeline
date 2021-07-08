@@ -53,14 +53,14 @@ public class GWASCatImport {
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
-//            dao.insertGWASBatch(inserting);
+            dao.insertGWASBatch(inserting);
         }
 
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
         if(!deleteMe.isEmpty()){
             logger.info("- - Total objects deleted: " + deleteMe.size());
             logInsDel(deleted, deleteMe);
-//            dao.deleteGWASBatch(deleteMe);
+            dao.deleteGWASBatch(deleteMe);
         }
 
         Collection<GWASCatalog> match = CollectionUtils.intersection(incoming,inRgd);
