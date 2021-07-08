@@ -4,10 +4,6 @@ import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.Utils;
 
 import java.io.BufferedReader;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,10 +58,19 @@ public class Parser {
         else if (gc.getSnps().isEmpty())
             shallow.add(gc);
         else {
-            String[] listChr = gc.getChr().split(";");
-            String[] listPos = gc.getPos().split(";");
-            String[] riskAllele = gc.getStrongSnpRiskallele().split("/");
-            String[] snps = gc.getSnps().split(";");
+            String[] listChr = {null};  // = gc.getChr().split(";");
+            String[] listPos = {null};  //gc.getPos().split(";");
+            String[] riskAllele = {null};   //gc.getStrongSnpRiskallele().split("/");
+            String[] snps = {null}; //gc.getSnps().split(";");
+            if (!gc.getChr().isEmpty())
+                listChr = gc.getChr().split(";");
+            if (!gc.getPos().isEmpty())
+                listPos = gc.getPos().split(";");
+            if (!gc.getStrongSnpRiskallele().isEmpty())
+                riskAllele = gc.getStrongSnpRiskallele().split("/");
+            if (!gc.getSnps().isEmpty())
+                snps = gc.getSnps().split(";");
+
             for (int i = 0; i < listChr.length; i++) {
                 GWASCatalog carbon = new GWASCatalog(gc, listChr[i],listPos[i],riskAllele[i],snps[i]);
 //                System.out.println(gc.print());
@@ -79,6 +84,7 @@ public class Parser {
     {
 //        System.out.println(lineData);
         GWASCatalog gc = new GWASCatalog();
+        String rowCol;
         String[] row = lineData.split("\t");
         for (int i = 0; i < row.length; i++) {
             switch (columns.get(i)){
@@ -101,35 +107,55 @@ public class Parser {
                     break;
                 case "DISEASE/TRAIT":
                     //System.out.print(row[i]+"|");
-                    gc.setDiseaseTrait(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setDiseaseTrait(rowCol);
                     break;
                 case "INITIAL SAMPLE SIZE":
                     //System.out.print(row[i]+"|");
-                    gc.setInitialSample(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setInitialSample(rowCol);
                     break;
                 case "REPLICATION SAMPLE SIZE":
                     //System.out.print(row[i]+"|");
-                    gc.setReplicateSample(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setReplicateSample(rowCol);
                     break;
                 case "REGION":
                     //System.out.print(row[i]+"|");
-                    gc.setRegion(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setRegion(rowCol);
                     break;
                 case "CHR_ID":
                     //System.out.print(row[i]+"|");
-                    gc.setChr(row[i]);
+                    rowCol = row[i];
+                    gc.setChr(rowCol);
                     break;
                 case "CHR_POS":
                     //System.out.print(row[i]+"|");
-                    gc.setPos(row[i]);
+                    rowCol = row[i];
+                    gc.setPos(rowCol);
                     break;
                 case "REPORTED GENE(S)":
                     //System.out.print(row[i]+"|");
-                    gc.setReportedGenes(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setReportedGenes(rowCol);
                     break;
                 case "MAPPED_GENE":
                     //System.out.print(row[i]+"|");
-                    gc.setMappedGene(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setMappedGene(rowCol);
                     break;
                 case "UPSTREAM_GENE_ID":
                     break;
@@ -137,7 +163,10 @@ public class Parser {
                     break;
                 case "SNP_GENE_IDS":
                     //System.out.print(row[i]+"|");
-                    gc.setSnpGeneId(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setSnpGeneId(rowCol);
                     break;
                 case "UPSTREAM_GENE_DISTANCE":
                     break;
@@ -164,23 +193,33 @@ public class Parser {
                     break;
                 case "SNPS":
                     //System.out.print(row[i]+"|");
-                    gc.setSnps(row[i]);
+                    rowCol = row[i];
+                    gc.setSnps(rowCol);
                     break;
                 case "MERGED":
                     break;
                 case "SNP_ID_CURRENT":
                     //System.out.print(row[i]+"|");
-                    gc.setCurSnpId(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setCurSnpId(rowCol);
                     break;
                 case "CONTEXT":
                     //System.out.print(row[i]+"|");
-                    gc.setContext(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setContext(rowCol);
                     break;
                 case "INTERGENIC":
                     break;
                 case "RISK ALLELE FREQUENCY":
                     //System.out.print(row[i]+"|");
-                    gc.setRiskAlleleFreq(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setRiskAlleleFreq(rowCol);
                     break;
                 case "P-VALUE":
                     //System.out.print(row[i]+"|");
@@ -199,17 +238,22 @@ public class Parser {
                     break;
                 case "PLATFORM [SNPS PASSING QC]":
                     //System.out.print(row[i]+"|");
-                    gc.setSnpPassQc(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setSnpPassQc(rowCol);
                     break;
                 case "CNV":
                     break;
                 case "MAPPED_TRAIT":
                     //System.out.print(row[i]+"|");
-                    gc.setMapTrait(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setMapTrait(rowCol);
                     break;
                 case "MAPPED_TRAIT_URI":
                     //System.out.print(row[i]+"|");
-                    // only get EFO Id
                     String[] urls = row[i].split(",");
                     String efoId = "";
                     for (int j = 0; j < urls.length; j++){
@@ -219,11 +263,16 @@ public class Parser {
                         else
                             efoId += (efo[efo.length-1]+", ");
                     }
+                    if (efoId.isEmpty())
+                        efoId = null;
                     gc.setEfoId(efoId);
                     break;
                 case "STUDY ACCESSION":
                     //System.out.print(row[i]+"|");
-                    gc.setStudyAcc(row[i]);
+                    rowCol = row[i];
+                    if (rowCol.isEmpty())
+                        rowCol = null;
+                    gc.setStudyAcc(rowCol);
                     break;
                 case "GENOTYPING TECHNOLOGY":
                     break;
