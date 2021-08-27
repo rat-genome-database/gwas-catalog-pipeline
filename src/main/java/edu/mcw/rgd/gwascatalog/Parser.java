@@ -233,6 +233,7 @@ public class Parser {
                 case "P-VALUE (TEXT)":
                     break;
                 case "OR or BETA":
+                    gc.setOrBeta(row[i]);
                     break;
                 case "95% CI (TEXT)":
                     break;
