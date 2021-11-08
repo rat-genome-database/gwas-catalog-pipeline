@@ -3,17 +3,18 @@ package edu.mcw.rgd.gwascatalog;
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.Utils;
 
-import java.io.BufferedReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 public class Parser {
     int cnt = 0;
     public ArrayList<GWASCatalog> parse(String myFile) throws Exception
     {
         ArrayList<GWASCatalog> list = new ArrayList<>();
-        BufferedReader br = Utils.openReader(myFile);
+        BufferedReader br = openFile(myFile);
         String lineData;
         String[] col = null;
         ArrayList<String> columns = new ArrayList<>();
@@ -60,7 +61,7 @@ public class Parser {
         else {
             String[] listChr = {null};  // = gc.getChr().split(";");
             String[] listPos = {null};  //gc.getPos().split(";");
-            String[] riskAllele = {null};   //gc.getStrongSnpRiskallele().split("/");
+            String[] riskAllele = {};   //gc.getStrongSnpRiskallele().split("/");
             String[] snps = {null}; //gc.getSnps().split(";");
             if (!gc.getChr().isEmpty())
                 listChr = gc.getChr().split(";");
@@ -72,7 +73,13 @@ public class Parser {
                 snps = gc.getSnps().split(";");
 
             for (int i = 0; i < listChr.length; i++) {
-                GWASCatalog carbon = new GWASCatalog(gc, listChr[i],listPos[i],riskAllele[i],snps[i]);
+                GWASCatalog carbon;
+                if (riskAllele.length==0) {
+                   carbon = new GWASCatalog(gc, listChr[i], listPos[i], null, snps[i]);
+                }
+                else {
+                    carbon = new GWASCatalog(gc, listChr[i], listPos[i], riskAllele[i], snps[i]);
+                }
 //                System.out.println(gc.print());
                 shallow.add(carbon);
             }
@@ -175,20 +182,34 @@ public class Parser {
                 case "STRONGEST SNP-RISK ALLELE":
                     //System.out.print(row[i]+"|");
                     try {
+                        // check if the start is chr, then parse chromosome and position from it
                         String[] alleles = row[riskAllele].split(";");
-                        String variant = "";
-                        for (int j = 0; j < alleles.length; j++){
-                            String[] allele = alleles[j].split("-");
-                            if (j != alleles.length-1)
-                                variant += allele[allele.length - 1]+"/";
-                            else
-                                variant += allele[allele.length - 1];
+                        if (alleles.length > 1) {
+                            String variant = "";
+                            for (int j = 0; j < alleles.length; j++) {
+                                String[] allele = alleles[j].split("-");
+                                if (j != alleles.length - 1)
+                                    variant += allele[allele.length - 1] + "/";
+                                else
+                                    variant += allele[allele.length - 1];
+                            }
+
+                            gc.setStrongSnpRiskallele(variant);
                         }
-                        gc.setStrongSnpRiskallele(variant);
+                        else {
+                            String[] allele = row[riskAllele].split("-");
+                            if (allele.length == 1)
+                                gc.setStrongSnpRiskallele("");
+                            else
+                                gc.setStrongSnpRiskallele(allele[allele.length - 1]);
+                        }
                     }
                     catch (Exception e) {
                         String[] allele = row[riskAllele].split("-");
-                        gc.setStrongSnpRiskallele(allele[allele.length - 1]);
+                        if (allele.length == 1)
+                            gc.setStrongSnpRiskallele("");
+                        else
+                            gc.setStrongSnpRiskallele(allele[allele.length - 1]);
                     }
                     break;
                 case "SNPS":
@@ -282,7 +303,24 @@ public class Parser {
             }
 
         }
+        if (gc.getStrongSnpRiskallele()==null){
+            System.out.println(gc.print());
+        }
 //        System.out.println();
         return gc;
+    }
+    private BufferedReader openFile(String fileName) throws IOException {
+
+        String encoding = "UTF-8"; // default encoding
+
+        InputStream is;
+        if( fileName.endsWith(".gz") ) {
+            is = new GZIPInputStream(new FileInputStream(fileName));
+        } else {
+            is = new FileInputStream(fileName);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, encoding));
+        return reader;
     }
 }
