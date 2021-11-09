@@ -7,6 +7,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 public class Parser {
@@ -74,10 +76,14 @@ public class Parser {
 
             for (int i = 0; i < listChr.length; i++) {
                 GWASCatalog carbon;
-                if (riskAllele.length==0) {
+                if (riskAllele.length==0 || checkStringNotUnicode(riskAllele[i])) {
                    carbon = new GWASCatalog(gc, listChr[i], listPos[i], null, snps[i]);
                 }
                 else {
+                    if (riskAllele[i].charAt(riskAllele[i].length()-1) == ' ') {
+                        System.out.println(riskAllele[i]);//.replaceAll("[^a-zA-Z]", ""));
+                    }
+
                     carbon = new GWASCatalog(gc, listChr[i], listPos[i], riskAllele[i], snps[i]);
                 }
 //                System.out.println(gc.print());
@@ -303,9 +309,6 @@ public class Parser {
             }
 
         }
-        if (gc.getStrongSnpRiskallele()==null){
-            System.out.println(gc.print());
-        }
 //        System.out.println();
         return gc;
     }
@@ -322,5 +325,15 @@ public class Parser {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(is, encoding));
         return reader;
+    }
+
+    private boolean checkStringNotUnicode(String allele) throws Exception{
+
+        for (char c : allele.toCharArray()){
+            if (Character.UnicodeBlock.of(c) != Character.UnicodeBlock.BASIC_LATIN) {
+                return true;
+            }
+        }
+        return false;
     }
 }
