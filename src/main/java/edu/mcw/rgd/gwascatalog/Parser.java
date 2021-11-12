@@ -80,10 +80,6 @@ public class Parser {
                    carbon = new GWASCatalog(gc, listChr[i], listPos[i], null, snps[i]);
                 }
                 else {
-                    if (riskAllele[i].charAt(riskAllele[i].length()-1) == ' ') {
-                        System.out.println(riskAllele[i]);//.replaceAll("[^a-zA-Z]", ""));
-                    }
-
                     carbon = new GWASCatalog(gc, listChr[i], listPos[i], riskAllele[i], snps[i]);
                 }
 //                System.out.println(gc.print());
