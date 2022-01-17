@@ -5,7 +5,8 @@ import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.FileDownloader;
 import edu.mcw.rgd.process.Utils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -20,9 +21,9 @@ public class GWASCatImport {
     private String gwasFile;
     private GWASCatalogDAO dao = new GWASCatalogDAO();
 
-    protected Logger logger = Logger.getLogger("status");
-    protected Logger inserted = Logger.getLogger("logInsertedGWAS");
-    protected Logger deleted = Logger.getLogger("logDeletedGWAS");
+    protected Logger logger = LogManager.getLogger("status");
+    protected Logger inserted = LogManager.getLogger("inserted");
+    protected Logger deleted = LogManager.getLogger("deleted");
 
     void run() throws Exception
     {
