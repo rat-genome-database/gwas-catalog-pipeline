@@ -1,0 +1,6 @@
+2/2/2022
+adding variant_rgd_id to gwas table, added changes.txt
+
+Summer/fall of 2021
+
+Imported Gwas Catalog into RGD

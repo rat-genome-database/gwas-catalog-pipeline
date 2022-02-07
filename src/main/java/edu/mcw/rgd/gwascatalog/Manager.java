@@ -25,6 +25,10 @@ public class Manager {
                         GWASCatImport gcimport = (GWASCatImport) (bf.getBean("gwasCatImport"));
                         gcimport.run();
                         break;
+                    case "--assignRgdId":
+                        GwasRgdIdAssign gcAssign = (GwasRgdIdAssign) (bf.getBean("gwasRgdIdAssign"));
+                        gcAssign.run();
+                        break;
                 }
             }
         }

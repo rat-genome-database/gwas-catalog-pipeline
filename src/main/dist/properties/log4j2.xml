@@ -16,7 +16,6 @@
             <PatternLayout pattern="%m%n"/>
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
-
         <RollingFile name="inserted" append="true" fileName="logs/inserted.log" filePattern="logs/inserted.log.%d{yyyy-MM}">
             <PatternLayout pattern="[%d] - %m%n"/>
             <Policies>
@@ -29,26 +28,48 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+
+        <RollingFile name="assign_detail" append="true" fileName="logs/variant_linking.log" filePattern="logs/variant_linking.log.%d{yyyy-MM}">
+            <PatternLayout pattern="[%d] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <RollingFile name="assign_status" append="true" fileName="logs/status.log" filePattern="logs/status.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="assignSum" append="false" fileName="logs/assignSum.log">
+            <PatternLayout pattern="%m%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+
     </Appenders>
 
     <Loggers>
         <Root level="INFO">
             <AppenderRef ref="Console"/>
         </Root>
-        <!-- daily -->
         <Logger name="status" level="info" additivity="false">
             <AppenderRef ref="status"/>
             <AppenderRef ref="summary"/><!-- human readable -->
             <AppenderRef ref="Console" level="info"/>
         </Logger>
-
-        <!-- monthly -->
         <Logger name="inserted" level="debug" additivity="false">
             <AppenderRef ref="inserted"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
         <Logger name="deleted" level="debug" additivity="false">
             <AppenderRef ref="deleted"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+
+        <Logger name="assignSum" level="debug" additivity="false">
+            <AppenderRef ref="assignSum"/>
+            <AppenderRef ref="assign_detail" level="debug"/>
+            <AppenderRef ref="assign_status" level="info"/><!-- human readable -->
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>
