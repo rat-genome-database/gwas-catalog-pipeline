@@ -50,12 +50,12 @@ public class GWASCatImport {
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
         List<GWASCatalog> inRgd = dao.getFullCatalog();
-        insertNewVariants(inRgd);
+//        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
-//            insertNewVariants(inRgd);
+            insertNewVariants(inRgd); // used after initial load for new variants
             dao.insertGWASBatch(inserting);
         }
 
