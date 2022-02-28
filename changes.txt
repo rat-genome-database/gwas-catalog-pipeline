@@ -1,3 +1,6 @@
+2/21/2022
+updating/inserting variants with data
+
 2/2/2022
 adding variant_rgd_id to gwas table, added changes.txt
 

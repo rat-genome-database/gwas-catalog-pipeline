@@ -1,11 +1,7 @@
 package edu.mcw.rgd.gwascatalog;
 
-import edu.mcw.rgd.dao.DataSourceFactory;
-import edu.mcw.rgd.dao.impl.GWASCatalogDAO;
-import edu.mcw.rgd.dao.impl.VariantDAO;
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.datamodel.Variant;
-import edu.mcw.rgd.process.FastaParser;
 import edu.mcw.rgd.process.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,12 +13,11 @@ import java.util.List;
 
 public class GwasRgdIdAssign {
     String version;
-    GWASCatalogDAO dao = new GWASCatalogDAO();
-    VariantDAO vdao = new VariantDAO();
+    DAO dao = new DAO();
     protected Logger logger = LogManager.getLogger("assignSum");
 
     void run() throws Exception {
-        vdao.setDataSource(DataSourceFactory.getInstance().getCarpeNovoDataSource());
+        dao.setDataSource();
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         logger.info(getVersion());
         long pipeStart = System.currentTimeMillis();
@@ -38,11 +33,11 @@ public class GwasRgdIdAssign {
 
             if (gc.getChr() != null && gc.getPos() != null && gc.getStrongSnpRiskallele() != null) {
                 long start = Integer.parseInt(gc.getPos());
-                String ref = getRefAllele(38, gc);
+                String ref = dao.getRefAllele(38, gc);
                 if (ref.equals(gc.getStrongSnpRiskallele()) || gc.getStrongSnpRiskallele().contains("?")) // skip lines that have the same ref and var nuc
                     continue;
 
-                List<Variant> variants = vdao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
+                List<Variant> variants = dao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
                 for (Variant v : variants) {
                     if (gc.getVariantRgdId() == v.getRgdId()) {
                         logger.info("GWAS ID:" + gc.getGwasId() + " RGD_ID has not changed: " + gc.getVariantRgdId());
@@ -67,29 +62,6 @@ public class GwasRgdIdAssign {
         dao.updateGWASBatch(update);
     }
 
-    String getRefAllele(int mapKey, GWASCatalog gc) throws Exception {
-
-        FastaParser parser = new FastaParser();
-        parser.setMapKey(mapKey);
-        if( parser.getLastError()!=null ) {
-
-        }
-
-        parser.setChr(Utils.defaultString(gc.getChr()));
-
-        int startPos = Integer.parseInt(Utils.defaultString(gc.getPos()));
-        int stopPos = Integer.parseInt(Utils.defaultString(gc.getPos()));
-
-        String fasta = parser.getSequence(startPos, stopPos);
-        if( parser.getLastError()!=null ) {
-
-        }
-        if( fasta == null ) {
-            return null;
-        }
-
-        return fasta;
-    }
 
 
     public void setVersion(String version) {

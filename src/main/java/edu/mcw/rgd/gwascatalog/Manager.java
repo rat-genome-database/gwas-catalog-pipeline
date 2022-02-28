@@ -22,8 +22,8 @@ public class Manager {
             for (int i = 0; i < args.length; i++){
                 switch (args[i]){
                     case "--importAssoc":
-                        GWASCatImport gcimport = (GWASCatImport) (bf.getBean("gwasCatImport"));
-                        gcimport.run();
+                        GWASCatImport gcImport = (GWASCatImport) (bf.getBean("gwasCatImport"));
+                        gcImport.run();
                         break;
                     case "--assignRgdId":
                         GwasRgdIdAssign gcAssign = (GwasRgdIdAssign) (bf.getBean("gwasRgdIdAssign"));
