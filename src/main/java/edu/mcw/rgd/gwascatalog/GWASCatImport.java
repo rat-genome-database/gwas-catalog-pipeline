@@ -55,7 +55,7 @@ public class GWASCatImport {
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
-            insertNewVariants(inRgd); // used after initial load for new variants
+            insertNewVariants(inserting); // used after initial load for new variants
             dao.insertGWASBatch(inserting);
         }
 
@@ -88,7 +88,7 @@ public class GWASCatImport {
         return;
     }
 
-    void insertNewVariants(List<GWASCatalog> newVariants) throws Exception{
+    void insertNewVariants(Collection<GWASCatalog> newVariants) throws Exception{
         List<VariantMapData> update = new ArrayList<>();
         List<VariantMapData> insert = new ArrayList<>();
         List<VariantSampleDetail> newDetails = new ArrayList<>();
@@ -133,6 +133,7 @@ public class GWASCatImport {
                     insert.add(vmd);
                     newDetails.add(vsd);
                 }
+
             } // created/update variants
 
         } // end GWAS for
