@@ -1,5 +1,6 @@
 package edu.mcw.rgd.gwascatalog;
 
+import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.datamodel.RgdId;
 import edu.mcw.rgd.datamodel.SpeciesType;
@@ -12,10 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class GWASCatImport {
     private String version;
@@ -50,12 +48,12 @@ public class GWASCatImport {
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
         List<GWASCatalog> inRgd = dao.getFullCatalog();
-//        insertNewVariants(inRgd); // initial load
+        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
-            insertNewVariants(inserting); // used after initial load for new variants
+//            insertNewVariants(inserting); // used after initial load for new variants
             dao.insertGWASBatch(inserting);
         }
 
@@ -89,13 +87,14 @@ public class GWASCatImport {
     }
 
     void insertNewVariants(Collection<GWASCatalog> newVariants) throws Exception{
-        List<VariantMapData> update = new ArrayList<>();
+        List<VariantMapData> updateVar = new ArrayList<>();
+        List<VariantMapData> updateVmd = new ArrayList<>();
         List<VariantMapData> insert = new ArrayList<>();
         List<VariantSampleDetail> newDetails = new ArrayList<>();
 
         for (GWASCatalog g : newVariants){
             boolean found = false;
-            if (g.getChr()==null || g.getPos()==null || g.getSnps()==null)
+            if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
                 continue;
             if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?")){
                 // check if in db, and compare.
@@ -106,11 +105,20 @@ public class GWASCatImport {
                 List<VariantMapData> data = dao.getVariants(g);
                 if (!data.isEmpty()) {
                     for (VariantMapData vmd : data) {
+                        boolean diffGenic = false;
                         // if exists, update rs is and add sample detail if that does not exist
                         if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), riskAllele ) &&
                                 Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
-                            vmd.setRsId(g.getSnps());
-                            update.add(vmd);
+
+                            String genicStat = isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
+                            if (!Utils.stringsAreEqual(genicStat,vmd.getGenicStatus())) {
+                                vmd.setGenicStatus(genicStat);
+                                updateVmd.add(vmd);
+                            }
+                            if (!Utils.stringsAreEqual(g.getSnps(),vmd.getRsId())) {
+                                vmd.setRsId(g.getSnps());
+                                updateVar.add(vmd);
+                            }
                             List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
                             if (sampleDetailInRgd.isEmpty()) {
                                 newDetails.add(createGwasVariantSampleDetail(g,vmd));
@@ -138,17 +146,21 @@ public class GWASCatImport {
 
         } // end GWAS for
 
-        if (!update.isEmpty()){
-            logger.info("Variants being updated: "+update.size());
-            dao.updateVariantMapData(update);
+        if (!updateVar.isEmpty()){
+            logger.info("       Variants being updated: "+updateVar.size());
+            dao.updateVariant(updateVar);
+        }
+        if (!updateVmd.isEmpty()){
+            logger.info("       Variant Genic Status being updated: "+updateVmd.size());
+            dao.updateVariantMapData(updateVmd);
         }
         if (!insert.isEmpty()){
-            logger.info("Variants being added: "+insert.size());
+            logger.info("       Variants being added: "+insert.size());
             dao.insertVariants(insert);
             dao.insertVariantMapData(insert);
         }
         if (!newDetails.isEmpty()){
-            logger.info("New Sample Details: "+newDetails.size());
+            logger.info("       New Sample Details: "+newDetails.size());
             dao.insertVariantSample(newDetails);
         }
     }
@@ -164,6 +176,7 @@ public class GWASCatImport {
         String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+","" );
         vmd.setVariantType(varType);
         vmd.setChromosome(g.getChr());
+        vmd.setGenicStatus( isGenic(38,g.getChr(),Integer.parseInt(g.getPos())) ? "GENIC":"INTERGENIC" );
         vmd.setStartPos( Integer.parseInt(g.getPos()) );
         vmd.setReferenceNucleotide(ref);
         vmd.setVariantNucleotide(riskAllele);
@@ -180,6 +193,21 @@ public class GWASCatImport {
         vsd.setVariantFrequency(1);
         return vsd;
     }
+
+
+
+    boolean isGenic(int mapKey, String chr, int pos) throws Exception {
+
+        GeneCache geneCache = geneCacheMap.get(chr);
+        if( geneCache==null ) {
+            geneCache = new GeneCache();
+            geneCacheMap.put(chr, geneCache);
+            geneCache.loadCache(mapKey, chr, DataSourceFactory.getInstance().getDataSource());
+        }
+        List<Integer> geneRgdIds = geneCache.getGeneRgdIds(pos);
+        return !geneRgdIds.isEmpty();
+    }
+    Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
     public void setVersion(String version) {
         this.version = version;
