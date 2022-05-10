@@ -51,6 +51,13 @@ public class DAO {
         return vdao.getVariants(sampleId, chr, start, stop);
     }
 
+    public List<VariantMapData> getVariantsByRsId(String rsId) throws Exception{
+        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.rs_id=?";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        return q.execute(rsId);
+    }
+
     String getRefAllele(int mapKey, GWASCatalog gc) throws Exception {
 
         FastaParser parser = new FastaParser();

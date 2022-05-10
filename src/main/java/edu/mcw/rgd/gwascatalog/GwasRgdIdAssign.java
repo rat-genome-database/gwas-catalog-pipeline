@@ -2,6 +2,7 @@ package edu.mcw.rgd.gwascatalog;
 
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.datamodel.Variant;
+import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.process.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +16,7 @@ public class GwasRgdIdAssign {
     String version;
     DAO dao = new DAO();
     protected Logger logger = LogManager.getLogger("assignSum");
+    protected Logger updated = LogManager.getLogger("updatedRgd");
 
     void run() throws Exception {
         dao.setDataSource();
@@ -22,6 +24,7 @@ public class GwasRgdIdAssign {
         logger.info(getVersion());
         long pipeStart = System.currentTimeMillis();
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
+        updated.debug("===================================");
         // get variants rgd id from variant table in CN
         // check position, var_nuc=risk_allele
         // if ref = var then rgd_id=null
@@ -32,27 +35,44 @@ public class GwasRgdIdAssign {
         for (GWASCatalog gc : catalog){
 
             if (gc.getChr() != null && gc.getPos() != null && gc.getStrongSnpRiskallele() != null) {
-                long start = Integer.parseInt(gc.getPos());
+//                long start = Integer.parseInt(gc.getPos());
                 String ref = dao.getRefAllele(38, gc);
-                if (ref.equals(gc.getStrongSnpRiskallele()) || gc.getStrongSnpRiskallele().contains("?")) // skip lines that have the same ref and var nuc
-                    continue;
+                if (ref.equals(gc.getStrongSnpRiskallele()) || gc.getStrongSnpRiskallele().contains("?")) { // skip lines that have the same ref and var nuc
+                    List<VariantMapData> variants = dao.getVariantsByRsId(gc.getSnps()); //dao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
+                    for (VariantMapData v : variants) {
+                        if (gc.getVariantRgdId() == (int)v.getId() ) {
+                            logger.debug("GWAS ID:" + gc.getGwasId() + " RGD_ID has not changed: " + gc.getVariantRgdId());
+                            break;
+                        }
+                        if (gc.getSnps().contains(v.getRsId())){
+                            updated.debug("       GWAS ID: " + gc.getGwasId() + " getting assigned new Variant RGD ID: " + v.getId() + "|Old Variant RGD Id: " + gc.getVariantRgdId());
+                            gc.setVariantRgdId((int)v.getId());
+                            updateRgdId.add(gc); // same variant_nucleotide added to insert list
+                            break;
+                        }
+                    } // end variants for
+                }
+                else {
+                    List<VariantMapData> variants = dao.getVariantsByRsId(gc.getSnps()); //dao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
+                    for (VariantMapData v : variants) {
+                        if (gc.getVariantRgdId() == (int) v.getId()) {
+                            logger.debug("GWAS ID:" + gc.getGwasId() + " RGD_ID has not changed: " + gc.getVariantRgdId());
+                            break;
+                        }
+                        if (v.getVariantNucleotide().equals(gc.getStrongSnpRiskallele())) { // check if var_nuc is the same Utils.stringsAreEqual(v.getRsId(),gc.getSnps())
+                            updated.debug("       GWAS ID: " + gc.getGwasId() + " getting assigned new Variant RGD ID: " + v.getId() + "|Old Variant RGD Id: " + gc.getVariantRgdId());
+                            gc.setVariantRgdId((int) v.getId());
+                            updateRgdId.add(gc); // same variant_nucleotide added to insert list
+                            break;
+                        }
+                    } // end variants for
+                }
 
-                List<Variant> variants = dao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
-                for (Variant v : variants) {
-                    if (gc.getVariantRgdId() == v.getRgdId()) {
-                        logger.info("GWAS ID:" + gc.getGwasId() + " RGD_ID has not changed: " + gc.getVariantRgdId());
-                        break;
-                    }
-                    if (v.getVariantNucleotide().equals(gc.getStrongSnpRiskallele())) { // check if var_nuc is the same
-                        gc.setVariantRgdId(v.getRgdId());
-                        updateRgdId.add(gc); // same variant_nucleotide added to insert list
-                        logger.info("       GWAS ID: " + gc.getGwasId() + " getting assigned RGD ID: " + gc.getVariantRgdId());
-                        break;
-                    }
-                } // end variants for
             } // end if
+
         } // end gwas for
-        updateGwas(updateRgdId);
+//        updateGwas(updateRgdId);
+        logger.info("   Total amount of Variant RGD Ids being assigned: "+updateRgdId.size());
         logger.info("   Total GWAS Catalog pipeline runtime -- elapsed time: "+
                 Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
     }
