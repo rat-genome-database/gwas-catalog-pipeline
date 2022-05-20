@@ -4,6 +4,7 @@ import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.datamodel.RgdId;
 import edu.mcw.rgd.datamodel.SpeciesType;
+import edu.mcw.rgd.datamodel.XdbId;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FileDownloader;
@@ -23,11 +24,15 @@ public class GWASCatImport {
     protected Logger logger = LogManager.getLogger("status");
     protected Logger inserted = LogManager.getLogger("inserted");
     protected Logger deleted = LogManager.getLogger("deleted");
+    protected Logger xdbLog = LogManager.getLogger("xdbSummary");
+    protected Logger varLog = LogManager.getLogger("variants");
 
     void run() throws Exception
     {
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         logger.info(getVersion());
+        xdbLog.debug(getVersion());
+        varLog.debug(getVersion());
         long pipeStart = System.currentTimeMillis();
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
         String myFile = downloadFile(gwasFile);
@@ -53,7 +58,7 @@ public class GWASCatImport {
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
-//            insertNewVariants(inserting); // used after initial load for new variants
+            insertNewVariants(inserting); // used after initial load for new variants
             dao.insertGWASBatch(inserting);
         }
 
@@ -61,7 +66,7 @@ public class GWASCatImport {
         if(!deleteMe.isEmpty()){
             logger.info("- - Total objects deleted: " + deleteMe.size());
             logInsDel(deleted, deleteMe);
-            dao.deleteGWASBatch(deleteMe);
+//            dao.deleteGWASBatch(deleteMe);
         }
 
         Collection<GWASCatalog> match = CollectionUtils.intersection(incoming,inRgd);
@@ -91,6 +96,8 @@ public class GWASCatImport {
         List<VariantMapData> updateVmd = new ArrayList<>();
         List<VariantMapData> insert = new ArrayList<>();
         List<VariantSampleDetail> newDetails = new ArrayList<>();
+        List<XdbId> newXdbs = new ArrayList<>();
+        HashMap<XdbId,Boolean> studies = new HashMap<>();
 
         for (GWASCatalog g : newVariants){
             boolean found = false;
@@ -112,16 +119,27 @@ public class GWASCatImport {
 
                             String genicStat = isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
                             if (!Utils.stringsAreEqual(genicStat,vmd.getGenicStatus())) {
+                                varLog.debug("Old genic status: "+vmd.getGenicStatus()+"|New Genic Status: " + genicStat);
                                 vmd.setGenicStatus(genicStat);
                                 updateVmd.add(vmd);
                             }
                             if (!Utils.stringsAreEqual(g.getSnps(),vmd.getRsId())) {
+                                varLog.debug("Old rsId: "+vmd.getRsId()+"|New rsId: "+g.getSnps());
                                 vmd.setRsId(g.getSnps());
                                 updateVar.add(vmd);
                             }
                             List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
                             if (sampleDetailInRgd.isEmpty()) {
                                 newDetails.add(createGwasVariantSampleDetail(g,vmd));
+                            }
+                            List<XdbId> xdbs = dao.getGwasXdbs((int) vmd.getId());
+                            if (xdbs.isEmpty()){
+                                XdbId x = createXdb(g, vmd);
+                                if ( studies.get(x) == null || !studies.get(x)) {
+                                    xdbLog.debug("New Xdb" + x.dump("|"));
+                                    studies.put(x, true);
+                                    newXdbs.add(x);
+                                }
                             }
                             found = true;
                             break;
@@ -132,6 +150,9 @@ public class GWASCatImport {
                         VariantSampleDetail vsd = createGwasVariantSampleDetail(g,vmd);
                         insert.add(vmd);
                         newDetails.add(vsd);
+                        XdbId x = createXdb(g, vmd);
+                        xdbLog.debug("New Xdb" + x.dump("|"));
+                        newXdbs.add(x);
                     }
                 } // end check if there are variants
                 else {
@@ -140,6 +161,9 @@ public class GWASCatImport {
                     VariantSampleDetail vsd = createGwasVariantSampleDetail(g,vmd);
                     insert.add(vmd);
                     newDetails.add(vsd);
+                    XdbId x = createXdb(g, vmd);
+                    xdbLog.debug("New Xdb" + x.dump("|"));
+                    newXdbs.add(x);
                 }
 
             } // created/update variants
@@ -148,7 +172,7 @@ public class GWASCatImport {
 
         if (!updateVar.isEmpty()){
             logger.info("       Variants being updated: "+updateVar.size());
-            dao.updateVariant(updateVar);
+//            dao.updateVariant(updateVar);
         }
         if (!updateVmd.isEmpty()){
             logger.info("       Variant Genic Status being updated: "+updateVmd.size());
@@ -162,6 +186,10 @@ public class GWASCatImport {
         if (!newDetails.isEmpty()){
             logger.info("       New Sample Details: "+newDetails.size());
             dao.insertVariantSample(newDetails);
+        }
+        if (!newXdbs.isEmpty()){
+            logger.info("       New XdbIds being added: "+newXdbs.size());
+            dao.insertGwasXdbs(newXdbs);
         }
     }
 
@@ -194,7 +222,18 @@ public class GWASCatImport {
         return vsd;
     }
 
-
+    XdbId createXdb(GWASCatalog g, VariantMapData vmd) throws Exception{
+        XdbId x = new XdbId();
+        x.setAccId(g.getStudyAcc());
+        x.setLinkText(g.getStudyAcc());
+        x.setRgdId((int)vmd.getId());
+        Date date = new Date();
+        x.setCreationDate(date);
+        x.setModificationDate(date);
+        x.setSrcPipeline("GWAS Catalog Pipeline");
+        x.setXdbKey(dao.getXdbKey());
+        return x;
+    }
 
     boolean isGenic(int mapKey, String chr, int pos) throws Exception {
 

@@ -16,6 +16,18 @@
             <PatternLayout pattern="%m%n"/>
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
+        <RollingFile name="xdbSummary" append="true" fileName="logs/xdbSummary.log" filePattern="logs/xdbSummary.log.%d{yyyy-MM}">
+            <PatternLayout pattern="[%d] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <RollingFile name="variants" append="true" fileName="logs/variantTables.log" filePattern="logs/variantTable.log.%d{yyyy-MM}">
+            <PatternLayout pattern="[%d] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
         <RollingFile name="inserted" append="true" fileName="logs/inserted.log" filePattern="logs/inserted.log.%d{yyyy-MM}">
             <PatternLayout pattern="[%d] - %m%n"/>
             <Policies>
@@ -68,6 +80,14 @@
         </Logger>
         <Logger name="deleted" level="debug" additivity="false">
             <AppenderRef ref="deleted"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="xdbSummary" level="debug" additivity="false">
+            <AppenderRef ref="xdbSummary"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="variants" level="debug" additivity="false">
+            <AppenderRef ref="variants"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
 

@@ -1,14 +1,8 @@
 package edu.mcw.rgd.gwascatalog;
 
-import edu.mcw.rgd.process.FileDownloader;
-import edu.mcw.rgd.process.Utils;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.FileSystemResource;
-
-import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Manager {
 

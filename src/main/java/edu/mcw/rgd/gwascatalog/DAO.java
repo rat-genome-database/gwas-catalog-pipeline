@@ -4,12 +4,10 @@ import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.dao.impl.GWASCatalogDAO;
 import edu.mcw.rgd.dao.impl.RGDManagementDAO;
 import edu.mcw.rgd.dao.impl.VariantDAO;
+import edu.mcw.rgd.dao.impl.XdbIdDAO;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
-import edu.mcw.rgd.datamodel.GWASCatalog;
-import edu.mcw.rgd.datamodel.RgdId;
-import edu.mcw.rgd.datamodel.SpeciesType;
-import edu.mcw.rgd.datamodel.Variant;
+import edu.mcw.rgd.datamodel.*;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FastaParser;
@@ -26,9 +24,19 @@ public class DAO {
     private GWASCatalogDAO dao = new GWASCatalogDAO();
     private VariantDAO vdao = new VariantDAO();
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
+    private XdbIdDAO xdao = new XdbIdDAO();
+    private int xdbKey = XdbId.XDB_KEY_GWAS;
+
+    public int getXdbKey() {
+        return xdbKey;
+    }
 
     public List<GWASCatalog> getFullCatalog() throws Exception{
         return dao.getFullCatalog();
+    }
+
+    public List<XdbId> getGwasXdbs(int rgdId) throws Exception {
+        return xdao.getXdbIdsByRgdId(getXdbKey(),rgdId);
     }
 
     public int insertGWASBatch(Collection<GWASCatalog> incoming) throws Exception{
@@ -52,7 +60,7 @@ public class DAO {
     }
 
     public List<VariantMapData> getVariantsByRsId(String rsId) throws Exception{
-        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.rs_id=?";
+        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.rs_id=? and vmd.map_key=38";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         return q.execute(rsId);
@@ -183,5 +191,9 @@ public class DAO {
     public RgdId createRgdId(int objectKey, String objectStatus, String notes, int mapKey) throws Exception{
         int speciesKey= SpeciesType.getSpeciesTypeKeyForMap(mapKey);
         return managementDAO.createRgdId(objectKey, objectStatus, notes, speciesKey);
+    }
+
+    public int insertGwasXdbs(List<XdbId> xdbs) throws Exception{
+        return xdao.insertXdbs(xdbs);
     }
 }
