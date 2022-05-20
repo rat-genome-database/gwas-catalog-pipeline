@@ -230,7 +230,7 @@ public class GWASCatImport {
         Date date = new Date();
         x.setCreationDate(date);
         x.setModificationDate(date);
-        x.setSrcPipeline("GWAS Catalog Pipeline");
+        x.setSrcPipeline("GWAS Catalog");
         x.setXdbKey(dao.getXdbKey());
         return x;
     }
