@@ -1,3 +1,9 @@
+5/26/2022
+fixing log date pattern
+
+5/19/2022
+inserting gwas studies into xdb tables
+
 2/21/2022
 updating/inserting variants with data
 
