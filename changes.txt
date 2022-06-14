@@ -1,3 +1,6 @@
+6/14/2022
+removed whitespace from rs ids
+
 5/26/2022
 fixing log date pattern
 
