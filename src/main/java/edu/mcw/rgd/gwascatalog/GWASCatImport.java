@@ -123,10 +123,15 @@ public class GWASCatImport {
                                 vmd.setGenicStatus(genicStat);
                                 updateVmd.add(vmd);
                             }
-                            if (!Utils.stringsAreEqual(g.getSnps(),vmd.getRsId())) {
-                                varLog.debug("Old rsId: "+vmd.getRsId()+"|New rsId: "+g.getSnps());
-                                vmd.setRsId(g.getSnps());
-                                updateVar.add(vmd);
+                            String rsId = g.getSnps().trim();
+                            if (!Utils.stringsAreEqual(rsId,vmd.getRsId())) {
+                                if (vmd.getRsId()==null) {
+                                    vmd.setRsId(g.getSnps());
+                                    updateVar.add(vmd);
+                                }
+                                else {
+                                    varLog.debug("Old rsId: " + vmd.getRsId() + "|New rsId: " + rsId);
+                                }
                             }
                             List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
                             if (sampleDetailInRgd.isEmpty()) {
