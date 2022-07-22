@@ -177,7 +177,7 @@ public class GWASCatImport {
 
         if (!updateVar.isEmpty()){
             logger.info("       Variants being updated: "+updateVar.size());
-//            dao.updateVariant(updateVar);
+            dao.updateVariant(updateVar);
         }
         if (!updateVmd.isEmpty()){
             logger.info("       Variant Genic Status being updated: "+updateVmd.size());
