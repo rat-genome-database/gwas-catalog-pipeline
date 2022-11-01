@@ -2,7 +2,7 @@
 <beans>
    <bean id="gwasCatImport" class="edu.mcw.rgd.gwascatalog.GWASCatImport">
        <property name="version" value="GWAS Catalog Pipeline -- build 2022-05-17"/>
-       <property name="gwasFile" value="https://www.ebi.ac.uk/gwas/api/search/downloads/alternative"/>
+       <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>
    </bean>
     <bean id="gwasRgdIdAssign" class="edu.mcw.rgd.gwascatalog.GwasRgdIdAssign">
         <property name="version" value="GWAS Catalog RGD ID Assignment -- build 2022-05-09"/>

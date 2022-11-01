@@ -199,16 +199,24 @@ public class DAO {
     public int withdrawVariants(Collection<GWASCatalog> tobeWithdrawn) throws Exception{
         RGDManagementDAO mdao = new RGDManagementDAO();
         for (GWASCatalog g : tobeWithdrawn){
+
+            if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
+                continue;
+            if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?"))
+                continue;
+
             List<VariantMapData> vars = getVariants(g);
             String ref = getRefAllele(38, g);
             for (VariantMapData vmd : vars){
-                if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), g.getStrongSnpRiskallele() ) &&
-                        Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
-                    RgdId id = new RgdId((int) vmd.getId());
-//                    mdao.withdraw(id);
-                    break;
+
+                    if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), g.getStrongSnpRiskallele()) &&
+                            Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
+                        RgdId id = new RgdId((int) vmd.getId());
+                    mdao.withdraw(id);
+                        break;
+                    }
                 }
-            }
+
         }
         return 1;
     }
