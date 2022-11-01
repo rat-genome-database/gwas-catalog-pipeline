@@ -53,7 +53,7 @@ public class GWASCatImport {
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
         List<GWASCatalog> inRgd = dao.getFullCatalog();
-        insertNewVariants(inRgd); // initial load
+//        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
@@ -66,7 +66,8 @@ public class GWASCatImport {
         if(!deleteMe.isEmpty()){
             logger.info("- - Total objects deleted: " + deleteMe.size());
             logInsDel(deleted, deleteMe);
-//            dao.deleteGWASBatch(deleteMe);
+            dao.withdrawVariants(deleteMe);
+            dao.deleteGWASBatch(deleteMe);
         }
 
         Collection<GWASCatalog> match = CollectionUtils.intersection(incoming,inRgd);
