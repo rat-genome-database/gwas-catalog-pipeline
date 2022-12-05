@@ -13,6 +13,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -35,18 +39,21 @@ public class GWASCatImport {
         varLog.debug(getVersion());
         long pipeStart = System.currentTimeMillis();
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
-        String myFile = downloadFile(gwasFile);
+        String myFile = isNewFile();
         Parser parser = new Parser();
 
-        try {
-            ArrayList<GWASCatalog> incoming = parser.parse(myFile);
-            logger.info("- - Total objects coming in: "+incoming.size());
-            // send incoming to method and check with DB
-            insertDeleteData(incoming);
+        if (myFile != null) {
+            try {
+                ArrayList<GWASCatalog> incoming = parser.parse(myFile);
+                logger.info("- - Total objects coming in: " + incoming.size());
+                // send incoming to method and check with DB
+                insertDeleteData(incoming);
+            } catch (Exception e) {
+                logger.info(e);
+            }
         }
-        catch (Exception e){
-            logger.info(e);
-        }
+        else
+            logger.info("\t\tFile is not new!");
         logger.info("   Total GWAS Catalog pipeline runtime -- elapsed time: "+
                 Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
     }
@@ -251,6 +258,52 @@ public class GWASCatImport {
         }
         List<Integer> geneRgdIds = geneCache.getGeneRgdIds(pos);
         return !geneRgdIds.isEmpty();
+    }
+
+    String isNewFile() throws Exception {
+        File lastFile = getLastModified("data/");
+        String myFile = downloadFile(gwasFile);
+        Path path = Paths.get(myFile);
+        Path path2 = Paths.get(lastFile.getPath());
+        try {
+
+            // size of a file (in bytes)
+            long bytes = Files.size(path);
+            long bytes2 = Files.size(path2);
+//            System.out.println(String.format("%,d bytes", bytes));
+//            System.out.println(String.format("%,d bytes", bytes2));
+            if (Utils.longsAreEqual(bytes,bytes2))
+                return null;
+            else
+                return myFile;
+
+        } catch (Exception e) {
+            logger.info(e);
+            return null;
+        }
+
+    }
+
+    public static File getLastModified(String directoryFilePath)
+    {
+        File directory = new File(directoryFilePath);
+        File[] files = directory.listFiles(File::isFile);
+        long lastModifiedTime = Long.MIN_VALUE;
+        File chosenFile = null;
+
+        if (files != null)
+        {
+            for (File file : files)
+            {
+                if (file.lastModified() > lastModifiedTime)
+                {
+                    chosenFile = file;
+                    lastModifiedTime = file.lastModified();
+                }
+            }
+        }
+
+        return chosenFile;
     }
     Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
