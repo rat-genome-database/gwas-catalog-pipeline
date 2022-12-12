@@ -13,4 +13,4 @@ java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -Dlog4j.configurationFile=file://$APPDIR/properties/log4j2.xml \
     -jar lib/$APPNAME.jar --importAssoc"$@" > run.log 2>&1
 
-mailx -s "[$SERVER] GWAS Catalog Pipeline Run" mtutaj@mcw.edu,llamers@mcw.edu < $APPDIR/logs/summary.log
+[ -s run.log ] && mailx -s "[$SERVER] GWAS Catalog Pipeline Run" mtutaj@mcw.edu,llamers@mcw.edu < $APPDIR/logs/summary.log
