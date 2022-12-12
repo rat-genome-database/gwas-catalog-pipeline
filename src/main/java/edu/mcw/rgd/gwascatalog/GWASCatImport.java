@@ -34,15 +34,16 @@ public class GWASCatImport {
     void run() throws Exception
     {
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String myFile = isNewFile();
+        Parser parser = new Parser();
+
+        if (myFile != null) {
         logger.info(getVersion());
         xdbLog.debug(getVersion());
         varLog.debug(getVersion());
         long pipeStart = System.currentTimeMillis();
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
-        String myFile = isNewFile();
-        Parser parser = new Parser();
 
-        if (myFile != null) {
             try {
                 ArrayList<GWASCatalog> incoming = parser.parse(myFile);
                 logger.info("- - Total objects coming in: " + incoming.size());
@@ -51,11 +52,10 @@ public class GWASCatImport {
             } catch (Exception e) {
                 logger.info(e);
             }
+            logger.info("   Total GWAS Catalog pipeline runtime -- elapsed time: "+
+                    Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
         }
-        else
-            logger.info("\t\tFile is not new!");
-        logger.info("   Total GWAS Catalog pipeline runtime -- elapsed time: "+
-                Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
+
     }
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
@@ -278,7 +278,7 @@ public class GWASCatImport {
                 return myFile;
 
         } catch (Exception e) {
-            logger.info(e);
+            logger.debug(e);
             return null;
         }
 
