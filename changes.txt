@@ -1,3 +1,6 @@
+12/12/2022
+updating script to not send email if nothing new
+
 6/14/2022
 removed whitespace from rs ids
 
