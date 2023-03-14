@@ -45,13 +45,14 @@ public class GwasRgdIdAssign {
                     for (VariantMapData v : variants) {
                         if (gc.getVariantRgdId() == (int) v.getId()) {
                             logger.debug("GWAS ID:" + gc.getGwasId() + " RGD_ID has not changed: " + gc.getVariantRgdId());
-                            break;
+//                            break;
                         }
-                        if (v.getVariantNucleotide().equals(gc.getStrongSnpRiskallele())) { // check if var_nuc is the same Utils.stringsAreEqual(v.getRsId(),gc.getSnps())
+                        else{
+//                        if (v.getVariantNucleotide().equals(gc.getStrongSnpRiskallele())) { // check if var_nuc is the same Utils.stringsAreEqual(v.getRsId(),gc.getSnps())
                             updated.debug("       GWAS ID: " + gc.getGwasId() + " getting assigned new Variant RGD ID: " + v.getId() + "|Old Variant RGD Id: " + gc.getVariantRgdId());
                             gc.setVariantRgdId((int) v.getId());
                             updateRgdId.add(gc); // same variant_nucleotide added to insert list
-                            break;
+//                            break;
                         }
                     } // end variants for
 
