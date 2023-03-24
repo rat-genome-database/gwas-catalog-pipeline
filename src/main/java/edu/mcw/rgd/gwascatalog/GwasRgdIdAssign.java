@@ -37,9 +37,9 @@ public class GwasRgdIdAssign {
             if (gc.getChr() != null && gc.getPos() != null && gc.getStrongSnpRiskallele() != null) {
 //                long start = Integer.parseInt(gc.getPos());
                 String ref = dao.getRefAllele(38, gc);
-                if (ref.equals(gc.getStrongSnpRiskallele()) || gc.getStrongSnpRiskallele().contains("?")) { // skip lines that have the same ref and var nuc
-                    continue;
-                }
+//                if (ref.equals(gc.getStrongSnpRiskallele()) || gc.getStrongSnpRiskallele().contains("?")) { // skip lines that have the same ref and var nuc
+//                    continue;
+//                }
 
                     List<VariantMapData> variants = dao.getVariantsByRsId(gc.getSnps()); //dao.getVariants(3, gc.getChr(), start, start); // get variants that are the same as GWAS data to get RGD ID
                     for (VariantMapData v : variants) {
