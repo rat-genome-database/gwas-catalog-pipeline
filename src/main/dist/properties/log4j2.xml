@@ -63,6 +63,16 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+        <File name="dupeRemove" append="false" fileName="logs/dupeRemove.log">
+            <PatternLayout pattern="%m%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+        <RollingFile name="dupeVars" append="true" fileName="logs/dupeVars.log" filePattern="logs/dupeVars.log.%d{yyyy-MM}">
+            <PatternLayout pattern="[%d] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -99,6 +109,14 @@
         </Logger>
         <Logger name="updatedRgd" level="debug" additivity="false">
             <AppenderRef ref="updatedRgd"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="dupeRemove" level="debug" additivity="false">
+            <AppenderRef ref="dupeRemove"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="dupeVars" level="debug" additivity="false">
+            <AppenderRef ref="dupeVars"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>

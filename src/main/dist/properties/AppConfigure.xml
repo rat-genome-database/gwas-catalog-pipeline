@@ -1,10 +1,13 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
    <bean id="gwasCatImport" class="edu.mcw.rgd.gwascatalog.GWASCatImport">
-       <property name="version" value="GWAS Catalog Pipeline -- build 2022-05-17"/>
+       <property name="version" value="GWAS Catalog Pipeline -- build 2023-03-24"/>
        <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>
    </bean>
     <bean id="gwasRgdIdAssign" class="edu.mcw.rgd.gwascatalog.GwasRgdIdAssign">
         <property name="version" value="GWAS Catalog RGD ID Assignment -- build 2022-05-09"/>
+    </bean>
+    <bean id="gwasDuplicateRemoval" class="edu.mcw.rgd.gwascatalog.RemoveDuplicateInVar">
+        <property name="version" value="GWAS Catalog Remove Duplicate Values in Variant Tables -- build 2023-03-27"/>
     </bean>
 </beans>
