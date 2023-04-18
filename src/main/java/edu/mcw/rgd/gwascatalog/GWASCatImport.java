@@ -193,6 +193,7 @@ public class GWASCatImport {
         }
         if (!insert.isEmpty()){
             logger.info("       Variants being added: "+insert.size());
+            List<VariantMapData> newInsert = removeDuplicates(insert);
             dao.insertVariants(insert);
             dao.insertVariantMapData(insert);
         }
@@ -209,8 +210,8 @@ public class GWASCatImport {
     VariantMapData createMapData(GWASCatalog g, String ref) throws Exception{
         VariantMapData vmd = new VariantMapData();
         int speciesKey= SpeciesType.getSpeciesTypeKeyForMap(38);
-        RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
-        vmd.setId(r.getRgdId());
+//        RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
+//        vmd.setId(r.getRgdId());
         vmd.setRsId(g.getSnps());
         vmd.setSpeciesTypeKey(speciesKey);
         String varType = "snv";
@@ -304,6 +305,21 @@ public class GWASCatImport {
         }
 
         return chosenFile;
+    }
+
+    ArrayList<VariantMapData> removeDuplicates(List<VariantMapData> list) throws Exception {
+        ArrayList<VariantMapData> newList = new ArrayList<>();
+        Set<VariantMapData> set = new HashSet<>(list);
+        newList.addAll(set);
+        for (VariantMapData vmd : newList) {
+//            if (!newList.contains(vmd)) {
+                RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
+                vmd.setId(r.getRgdId());
+//            }
+        }
+
+        // return the new list
+        return newList;
     }
     Map<String, GeneCache> geneCacheMap = new HashMap<>();
 

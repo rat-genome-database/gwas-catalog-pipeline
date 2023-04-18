@@ -23,6 +23,10 @@ public class Manager {
                         GwasRgdIdAssign gcAssign = (GwasRgdIdAssign) (bf.getBean("gwasRgdIdAssign"));
                         gcAssign.run();
                         break;
+                    case "--removeDupes":
+                        RemoveDuplicateInVar gcRemove = (RemoveDuplicateInVar) (bf.getBean("gwasDuplicateRemoval"));
+                        gcRemove.run();
+                        break;
                 }
             }
         }

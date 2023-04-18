@@ -12,17 +12,24 @@ import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FastaParser;
 import edu.mcw.rgd.process.Utils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.BatchSqlUpdate;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class DAO {
     private GWASCatalogDAO dao = new GWASCatalogDAO();
     private VariantDAO vdao = new VariantDAO();
+    edu.mcw.rgd.dao.impl.variants.VariantDAO variantDAO = new edu.mcw.rgd.dao.impl.variants.VariantDAO();
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
     private XdbIdDAO xdao = new XdbIdDAO();
     private int xdbKey = XdbId.XDB_KEY_GWAS;
@@ -219,5 +226,32 @@ public class DAO {
 
         }
         return 1;
+    }
+
+    public int withdrawVariants(List<Long> tobeWithdrawn, Logger logger) throws Exception{
+        RGDManagementDAO mdao = new RGDManagementDAO();
+        for (Long rgdId : tobeWithdrawn){
+            RgdId id = new RgdId(rgdId.intValue());
+            logger.debug("RGD ID being withdrawn due to being duplicate: "+id.getRgdId());
+            mdao.withdraw(id);
+        }
+        return 1;
+    }
+
+    public List<Long> getGWASRgdIds() throws Exception{
+        String sql = "select rgd_id from rgd_ids where notes like '%GWAS%'";
+        List<Long> rgdIds = new ArrayList<>();
+        Connection con = DataSourceFactory.getInstance().getDataSource().getConnection();
+        PreparedStatement ps = con.prepareStatement(sql);
+        ResultSet rs = ps.executeQuery();
+        while( rs.next() ) {
+            rgdIds.add( rs.getLong(1) );
+        }
+        con.close();
+        return rgdIds;
+    }
+
+    public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception{
+        return variantDAO.getVariantsByRgdId(rgdId);
     }
 }
