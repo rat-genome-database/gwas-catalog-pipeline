@@ -1,6 +1,7 @@
 package edu.mcw.rgd.gwascatalog;
 
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
+import edu.mcw.rgd.process.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,29 +23,38 @@ public class RemoveDuplicateInVar {
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
         List<Long> rgdIds = dao.getGWASRgdIds();
 
-        List<VariantMapData> gwasVMD = new ArrayList<>();
-        // go through rgdIDs
+        try {
+            List<VariantMapData> gwasVMD = new ArrayList<>();
+            // go through rgdIDs
 
-        for (Long rgdId : rgdIds){
-            List<VariantMapData> vmds = dao.getVariantsbyRgdId(rgdId.intValue());
-            gwasVMD.addAll(vmds);
+            for (Long rgdId : rgdIds) {
+                List<VariantMapData> vmds = dao.getVariantsbyRgdId(rgdId.intValue());
+                gwasVMD.addAll(vmds);
+            }
+
+            // maybe override equal for VMD and use the below method to see if work
+
+            ArrayList<VariantMapData> newList = new ArrayList<>();
+            Set<VariantMapData> set = new HashSet<>(gwasVMD);
+            newList.addAll(set);
+
+            // then withdraw rgdids that are no longer present
+            // remove from rgdIds list based on what is in newList
+            //  withdraw remaining ids
+            for (VariantMapData vmd : newList) {
+                rgdIds.remove(vmd.getId());
+            }
+
+            System.out.println(rgdIds.size());
+            for (Long id : rgdIds)
+                logger.info("       RGDID being withdrawn because duplicate: " + id);
+            dao.withdrawVariants(rgdIds, dupeVars);
         }
-
-        // maybe override equal for VMD and use the below method to see if work
-
-        ArrayList<VariantMapData> newList = new ArrayList<>();
-        Set<VariantMapData> set = new HashSet<>(gwasVMD);
-        newList.addAll(set);
-
-        // then withdraw rgdids that are no longer present
-        // remove from rgdIds list based on what is in newList
-        //  withdraw remaining ids
-        for (VariantMapData vmd : newList){
-            rgdIds.remove(vmd.getId());
+        catch (Exception e){
+            logger.info(e);
         }
-
-        System.out.println(rgdIds.size());
-        dao.withdrawVariants(rgdIds, dupeVars);
+        logger.info("   pipeline runtime -- elapsed time: "+
+                Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
 
     }
     public void setVersion(String version) {
