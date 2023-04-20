@@ -239,7 +239,7 @@ public class DAO {
     }
 
     public List<Long> getGWASRgdIds() throws Exception{
-        String sql = "select rgd_id from rgd_ids where notes like '%GWAS%'";
+        String sql = "select rgd_id from rgd_ids where notes like '%GWAS%' and object_status='ACTIVE'";
         List<Long> rgdIds = new ArrayList<>();
         Connection con = DataSourceFactory.getInstance().getDataSource().getConnection();
         PreparedStatement ps = con.prepareStatement(sql);
