@@ -31,8 +31,8 @@ public class RemoveDuplicateInVar {
             // go through rgdIDs
 
             for (String rsId : rsIds) {
-                List<VariantMapData> vmds = dao.getVariantsByRsId(rsId);
-//                List<VariantMapData> vmds2 = dao.getActiveVariantsByRsId(rsId);
+                List<VariantMapData> vmds = dao.getActiveVariantsByRsId(rsId);
+//                List<VariantMapData> vmds2 = dao.getVariantsByRsId(rsId);
                 gwasVMD.addAll(vmds);
 //                gwasVMD2.addAll(vmds2);
             }
