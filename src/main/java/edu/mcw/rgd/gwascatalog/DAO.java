@@ -73,6 +73,13 @@ public class DAO {
         return q.execute(rsId);
     }
 
+    public List<VariantMapData> getActiveVariantsByRsId(String rsId) throws Exception{
+        String sql = "SELECT * FROM variant v, variant_map_data vmd, RGD_IDS r where v.rgd_id=vmd.rgd_id and v.rs_id=? and vmd.map_key=38 and r.rgd_id=v.rgd_id and r.OBJECT_STATUS='ACTIVE'";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        return q.execute(rsId);
+    }
+
     String getRefAllele(int mapKey, GWASCatalog gc) throws Exception {
 
         FastaParser parser = new FastaParser();
@@ -249,6 +256,19 @@ public class DAO {
         }
         con.close();
         return rgdIds;
+    }
+
+    public List<String> getGWASrsIds() throws Exception{
+        String sql = "select distinct(snps) from gwas_catalog";
+        List<String> rsIds = new ArrayList<>();
+        Connection con = DataSourceFactory.getInstance().getDataSource().getConnection();
+        PreparedStatement ps = con.prepareStatement(sql);
+        ResultSet rs = ps.executeQuery();
+        while( rs.next() ) {
+            rsIds.add( rs.getString(1) );
+        }
+        con.close();
+        return rsIds;
     }
 
     public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception{

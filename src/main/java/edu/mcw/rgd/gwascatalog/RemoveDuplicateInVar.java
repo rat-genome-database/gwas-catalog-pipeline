@@ -21,33 +21,36 @@ public class RemoveDuplicateInVar {
         logger.info(getVersion());
         long pipeStart = System.currentTimeMillis();
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
-        List<Long> rgdIds = dao.getGWASRgdIds();
+
+        List<String> rsIds = dao.getGWASrsIds();
+        List<Long> rgdIds = new ArrayList<>();
 
         try {
             List<VariantMapData> gwasVMD = new ArrayList<>();
+//            List<VariantMapData> gwasVMD2 = new ArrayList<>();
             // go through rgdIDs
 
-            for (Long rgdId : rgdIds) {
-                List<VariantMapData> vmds = dao.getVariantsbyRgdId(rgdId.intValue());
+            for (String rsId : rsIds) {
+                List<VariantMapData> vmds = dao.getVariantsByRsId(rsId);
+//                List<VariantMapData> vmds2 = dao.getActiveVariantsByRsId(rsId);
                 gwasVMD.addAll(vmds);
+//                gwasVMD2.addAll(vmds2);
             }
 
             // maybe override equal for VMD and use the below method to see if work
 
+
             ArrayList<VariantMapData> newList = new ArrayList<>();
             Set<VariantMapData> set = new HashSet<>(gwasVMD);
             newList.addAll(set);
-
+            Collection<VariantMapData> subtraction = CollectionUtils.subtract(gwasVMD, newList);
             // then withdraw rgdids that are no longer present
             // remove from rgdIds list based on what is in newList
             //  withdraw remaining ids
-            for (VariantMapData vmd : newList) {
+            for (VariantMapData vmd : subtraction) {
                 rgdIds.remove(vmd.getId());
             }
 
-            System.out.println(rgdIds.size());
-            for (Long id : rgdIds)
-                logger.info("       RGDID being withdrawn because duplicate: " + id);
             dao.withdrawVariants(rgdIds, dupeVars);
         }
         catch (Exception e){
