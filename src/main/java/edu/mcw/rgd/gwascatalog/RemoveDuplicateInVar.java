@@ -48,7 +48,7 @@ public class RemoveDuplicateInVar {
             // remove from rgdIds list based on what is in newList
             //  withdraw remaining ids
             for (VariantMapData vmd : subtraction) {
-                rgdIds.remove(vmd.getId());
+                rgdIds.add(vmd.getId());
             }
             logger.info("       Total RGD_IDS being withdrawn: "+rgdIds.size());
             dao.withdrawVariants(rgdIds, dupeVars);
