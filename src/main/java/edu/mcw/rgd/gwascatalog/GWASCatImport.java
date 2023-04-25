@@ -141,10 +141,7 @@ public class GWASCatImport {
                                     varLog.debug("Old rsId: " + vmd.getRsId() + "|New rsId: " + rsId);
                                 }
                             }
-                            List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
-                            if (sampleDetailInRgd.isEmpty()) {
-                                newDetails.add(createGwasVariantSampleDetail(g,vmd));
-                            }
+
                             List<XdbId> xdbs = dao.getGwasXdbs((int) vmd.getId());
                             if (xdbs.isEmpty()){
                                 XdbId x = createXdb(g, vmd);
@@ -160,9 +157,7 @@ public class GWASCatImport {
                     }
                     if (!found) {
                         VariantMapData vmd = createMapData(g,ref);
-                        VariantSampleDetail vsd = createGwasVariantSampleDetail(g,vmd);
                         insert.add(vmd);
-                        newDetails.add(vsd);
                         XdbId x = createXdb(g, vmd);
                         xdbLog.debug("New Xdb" + x.dump("|"));
                         newXdbs.add(x);
@@ -171,9 +166,7 @@ public class GWASCatImport {
                 else {
                     //else create new variant map data and and sample detail
                     VariantMapData vmd = createMapData(g,ref);
-                    VariantSampleDetail vsd = createGwasVariantSampleDetail(g,vmd);
                     insert.add(vmd);
-                    newDetails.add(vsd);
                     XdbId x = createXdb(g, vmd);
                     xdbLog.debug("New Xdb" + x.dump("|"));
                     newXdbs.add(x);
@@ -193,9 +186,9 @@ public class GWASCatImport {
         }
         if (!insert.isEmpty()){
             logger.info("       Variants being added: "+insert.size());
-            List<VariantMapData> newInsert = removeDuplicates(insert);
-            dao.insertVariants(insert);
-            dao.insertVariantMapData(insert);
+            List<VariantMapData> newInsert = removeDuplicates(insert, newDetails);
+            dao.insertVariants(newInsert);
+            dao.insertVariantMapData(newInsert);
         }
         if (!newDetails.isEmpty()){
             logger.info("       New Sample Details: "+newDetails.size());
@@ -227,7 +220,7 @@ public class GWASCatImport {
         return vmd;
     }
 
-    public VariantSampleDetail createGwasVariantSampleDetail(GWASCatalog g, VariantMapData vmd) throws Exception{
+    public VariantSampleDetail createGwasVariantSampleDetail(VariantMapData vmd) throws Exception{
         VariantSampleDetail vsd = new VariantSampleDetail();
         vsd.setId(vmd.getId());
         vsd.setSampleId( 3 );
@@ -280,7 +273,7 @@ public class GWASCatImport {
 
         } catch (Exception e) {
             logger.debug(e);
-            return null;
+            return myFile;
         }
 
     }
@@ -307,14 +300,18 @@ public class GWASCatImport {
         return chosenFile;
     }
 
-    ArrayList<VariantMapData> removeDuplicates(List<VariantMapData> list) throws Exception {
+    ArrayList<VariantMapData> removeDuplicates(List<VariantMapData> list, List<VariantSampleDetail> newDetails) throws Exception {
         ArrayList<VariantMapData> newList = new ArrayList<>();
         Set<VariantMapData> set = new HashSet<>(list);
         newList.addAll(set);
         for (VariantMapData vmd : newList) {
 //            if (!newList.contains(vmd)) {
-                RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
-                vmd.setId(r.getRgdId());
+            RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
+            vmd.setId(r.getRgdId());
+            List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
+            if (sampleDetailInRgd.isEmpty()) {
+                newDetails.add(createGwasVariantSampleDetail(vmd));
+            }
 //            }
         }
 
