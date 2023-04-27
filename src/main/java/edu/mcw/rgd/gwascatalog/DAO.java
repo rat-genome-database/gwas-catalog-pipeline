@@ -58,6 +58,10 @@ public class DAO {
         return dao.updateGWASBatch(update);
     }
 
+    public List<GWASCatalog> getGWASbyRsId(String rsId) throws Exception{
+        return dao.getGWASListByRsId(rsId);
+    }
+
     public void setDataSource() throws Exception{
         vdao.setDataSource(DataSourceFactory.getInstance().getCarpeNovoDataSource());
     }
