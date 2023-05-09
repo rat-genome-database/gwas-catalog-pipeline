@@ -158,18 +158,12 @@ public class GWASCatImport {
                     if (!found) {
                         VariantMapData vmd = createMapData(g,ref);
                         insert.add(vmd);
-                        XdbId x = createXdb(g, vmd);
-                        xdbLog.debug("New Xdb" + x.dump("|"));
-                        newXdbs.add(x);
                     }
                 } // end check if there are variants
                 else {
                     //else create new variant map data and and sample detail
                     VariantMapData vmd = createMapData(g,ref);
                     insert.add(vmd);
-                    XdbId x = createXdb(g, vmd);
-                    xdbLog.debug("New Xdb" + x.dump("|"));
-                    newXdbs.add(x);
                 }
 
             } // created/update variants
@@ -186,7 +180,7 @@ public class GWASCatImport {
         }
         if (!insert.isEmpty()){
             logger.info("       Variants being added: "+insert.size());
-            List<VariantMapData> newInsert = removeDuplicates(insert, newDetails);
+            List<VariantMapData> newInsert = removeDuplicates(insert, newDetails, newXdbs);
             dao.insertVariants(newInsert);
             dao.insertVariantMapData(newInsert);
         }
@@ -300,23 +294,54 @@ public class GWASCatImport {
         return chosenFile;
     }
 
-    ArrayList<VariantMapData> removeDuplicates(List<VariantMapData> list, List<VariantSampleDetail> newDetails) throws Exception {
+    ArrayList<VariantMapData> removeDuplicates(List<VariantMapData> list, List<VariantSampleDetail> newDetails, List<XdbId> newXdbs) throws Exception {
         ArrayList<VariantMapData> newList = new ArrayList<>();
         Set<VariantMapData> set = new HashSet<>(list);
         newList.addAll(set);
         for (VariantMapData vmd : newList) {
-//            if (!newList.contains(vmd)) {
             RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
             vmd.setId(r.getRgdId());
             List<VariantSampleDetail> sampleDetailInRgd = dao.getVariantSampleDetail((int)vmd.getId(), 3);
             if (sampleDetailInRgd.isEmpty()) {
                 newDetails.add(createGwasVariantSampleDetail(vmd));
             }
-//            }
+            newXdbs.addAll(createXdbIds(vmd));
         }
 
         // return the new list
         return newList;
+    }
+
+    List<XdbId> createXdbIds(VariantMapData vmd) throws Exception{
+        List<GWASCatalog> gwas = dao.getGWASbyRsId(vmd.getRsId());
+        HashMap<XdbId,Boolean> studies = new HashMap<>();
+        List<XdbId> xdbs = dao.getGwasXdbs((int)vmd.getId());
+        List<XdbId> newXdbs = new ArrayList<>();
+        for (GWASCatalog g : gwas) {
+            if (xdbs.isEmpty()) {
+                XdbId x = createXdb(g, vmd);
+                if (studies.get(x) == null || !studies.get(x)) {
+                    xdbLog.debug("New Xdb" + x.dump("|"));
+                    studies.put(x, true);
+                    newXdbs.add(x);
+                }
+            }
+            else {
+                boolean exist = false;
+                for (XdbId xdb : xdbs){
+                    if (xdb.getAccId().equals(g.getStudyAcc())){
+                        exist = true;
+                        break;
+                    }
+                }
+                if (!exist){
+                    XdbId x = createXdb(g, vmd);
+                    xdbLog.debug("New Xdb" + x.dump("|"));
+                    newXdbs.add(x);
+                }
+            }
+        }
+        return newXdbs;
     }
     Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
