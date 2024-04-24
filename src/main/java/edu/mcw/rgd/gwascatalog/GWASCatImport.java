@@ -62,11 +62,13 @@ public class GWASCatImport {
         List<GWASCatalog> inRgd = dao.getFullCatalog();
 //        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
+        boolean insertExt = true;
         if (!inserting.isEmpty()){
             logger.info("- - Total objects inserted: " + inserting.size());
             logInsDel(inserted, inserting);
             insertNewVariants(inserting); // used after initial load for new variants
             dao.insertGWASBatch(inserting);
+            insertExt = false;
         }
 
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
@@ -80,6 +82,38 @@ public class GWASCatImport {
         Collection<GWASCatalog> match = CollectionUtils.intersection(incoming,inRgd);
         if (!match.isEmpty()){
             logger.info("- - Total matching objects: " + match.size());
+        }
+
+        if (insertExt){
+            insertNewVariantExt(inRgd);
+        }
+    }
+
+    void insertNewVariantExt(List<GWASCatalog> incoming) throws Exception {
+        // go through what we have and insert ? and same as ref alleles
+        ArrayList<GWASCatalog> insertExt = new ArrayList<>();
+        for (GWASCatalog g : incoming){
+            if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
+                continue;
+            if (g.getStrongSnpRiskallele()==null)
+                continue;
+            try {
+                if (g.getStrongSnpRiskallele().contains("?"))
+                    insertExt.add(g);
+                else {
+                    String ref = dao.getRefAllele(38, g);
+                    String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+", "");
+                    if (Utils.stringsAreEqual(ref, riskAllele))
+                        insertExt.add(g);
+                }
+            }
+            catch (Exception e){
+                System.out.println("error");
+            }
+        }
+        if (!insertExt.isEmpty()){
+            logger.info("\t\tInserting into VARIANT_EXT: "+insertExt.size());
+            insertVariantsExt(insertExt);
         }
     }
 
@@ -103,6 +137,7 @@ public class GWASCatImport {
         List<VariantMapData> updateVar = new ArrayList<>();
         List<VariantMapData> updateVmd = new ArrayList<>();
         List<VariantMapData> insert = new ArrayList<>();
+        List<GWASCatalog> varExt = new ArrayList<>();
         List<VariantSampleDetail> newDetails = new ArrayList<>();
         List<XdbId> newXdbs = new ArrayList<>();
         HashMap<XdbId,Boolean> studies = new HashMap<>();
@@ -111,12 +146,19 @@ public class GWASCatImport {
             boolean found = false;
             if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
                 continue;
-            if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?")){
+            if (g.getStrongSnpRiskallele()!=null && g.getStrongSnpRiskallele().contains("?")){
+                varExt.add(g);
+            }
+            if (g.getStrongSnpRiskallele()!=null){
                 // check if in db, and compare.
                 String ref = dao.getRefAllele(38, g);
                 String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+","" );
-                if (Utils.stringsAreEqual(ref,riskAllele) || riskAllele.length()>1) // reference and var nucleotide are equal or large risk allele
+                if (Utils.stringsAreEqual(ref,riskAllele) || riskAllele.length()>1){
+                    // reference and var nucleotide are equal or large risk allele
+                    varExt.add(g);
                     continue;
+                }
+
                 List<VariantMapData> data = dao.getVariants(g);
                 if (!data.isEmpty()) {
                     for (VariantMapData vmd : data) {
@@ -192,13 +234,109 @@ public class GWASCatImport {
             logger.info("       New XdbIds being added: "+newXdbs.size());
             dao.insertGwasXdbs(newXdbs);
         }
+        if (!varExt.isEmpty()){
+            logger.info("\t\tVariants being entered into Variant Ext: " + varExt.size());
+            insertVariantsExt(varExt);
+        }
+    }
+
+    void insertVariantsExt(Collection<GWASCatalog> newVariants) throws Exception{
+        List<VariantMapData> updateVar = new ArrayList<>();
+        List<VariantMapData> updateVmd = new ArrayList<>();
+        List<VariantMapData> insert = new ArrayList<>();
+        List<VariantSampleDetail> newDetails = new ArrayList<>();
+        List<XdbId> newXdbs = new ArrayList<>();
+        HashMap<XdbId,Boolean> studies = new HashMap<>();
+
+        for (GWASCatalog g : newVariants){
+            boolean found = false;
+            if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
+                continue;
+            // check if in db, and compare.
+            String ref = dao.getRefAllele(38, g);
+            String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+","" );
+
+            List<VariantMapData> data = dao.getVariantExt(g);
+            if (!data.isEmpty()) {
+                for (VariantMapData vmd : data) {
+                    boolean diffGenic = false;
+                    // if exists, update rs is and add sample detail if that does not exist
+                    if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), riskAllele ) &&
+                            Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
+
+                            String genicStat = isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
+                            if (!Utils.stringsAreEqual(genicStat,vmd.getGenicStatus())) {
+                                varLog.debug("Old genic status: "+vmd.getGenicStatus()+"|New Genic Status: " + genicStat);
+                                vmd.setGenicStatus(genicStat);
+                                updateVmd.add(vmd);
+                            }
+                        String rsId = g.getSnps().trim();
+                        if (!Utils.stringsAreEqual(rsId,vmd.getRsId())) {
+                            if (vmd.getRsId()==null) {
+                                vmd.setRsId(g.getSnps());
+                                updateVar.add(vmd);
+                            }
+                            else {
+                                varLog.debug("Old rsId: " + vmd.getRsId() + "|New rsId: " + rsId);
+                            }
+                        }
+
+                        List<XdbId> xdbs = dao.getGwasXdbs((int) vmd.getId());
+                        if (xdbs.isEmpty()){
+                            XdbId x = createXdb(g, vmd);
+                            if ( studies.get(x) == null || !studies.get(x)) {
+                                xdbLog.debug("New Xdb" + x.dump("|"));
+                                studies.put(x, true);
+                                newXdbs.add(x);
+                            }
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    VariantMapData vmd = createMapData(g,ref);
+                    insert.add(vmd);
+                }
+            } // end check if there are variants
+            else {
+                //else create new variant map data and and sample detail
+                VariantMapData vmd = createMapData(g,ref);
+                insert.add(vmd);
+            }
+                // created/update variants
+
+        } // end GWAS for
+
+        if (!updateVar.isEmpty()){
+            logger.info("       Variant_Ext being updated in: "+updateVar.size());
+            dao.updateVariant(updateVar);
+        }
+        if (!updateVmd.isEmpty()){
+            logger.info("       Variant_Ext Genic Status being updated: "+updateVmd.size());
+            dao.updateVariantMapData(updateVmd);
+        }
+        if (!insert.isEmpty()){
+            logger.info("       Variant_Ext being added: "+insert.size());
+            List<VariantMapData> newInsert = removeDuplicates(insert, newDetails, newXdbs);
+            dao.insertVariantExt(newInsert);
+            dao.insertVariantMapData(newInsert);
+        }
+        if (!newDetails.isEmpty()){
+            logger.info("       New Sample Details: "+newDetails.size());
+            dao.insertVariantSample(newDetails);
+        }
+        if (!newXdbs.isEmpty()){
+            logger.info("       New XdbIds being added: "+newXdbs.size());
+            dao.insertGwasXdbs(newXdbs);
+        }
     }
 
     VariantMapData createMapData(GWASCatalog g, String ref) throws Exception{
         VariantMapData vmd = new VariantMapData();
         int speciesKey= SpeciesType.getSpeciesTypeKeyForMap(38);
-//        RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
-//        vmd.setId(r.getRgdId());
+        RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", 38);
+        vmd.setId(r.getRgdId());
         vmd.setRsId(g.getSnps());
         vmd.setSpeciesTypeKey(speciesKey);
         String varType = "snv";

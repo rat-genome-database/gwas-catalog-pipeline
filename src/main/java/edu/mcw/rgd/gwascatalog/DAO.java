@@ -117,13 +117,21 @@ public class DAO {
         return q.execute(38, g.getChr(), g.getPos());
     }
 
+    public List<VariantMapData> getVariantExt(GWASCatalog g) throws Exception{
+        String sql = "SELECT * FROM variant_ext v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? and vmd.start_pos=?";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        return q.execute(38, g.getChr(), g.getPos());
+    }
+
     public void insertVariants(List<VariantMapData> mapsData)  throws Exception{
         BatchSqlUpdate sql1 = new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant (\n" +
-                        " RGD_ID,REF_NUC, VARIANT_TYPE, VAR_NUC, RS_ID, CLINVAR_ID, SPECIES_TYPE_KEY)\n" +
-                        "VALUES (\n" +
-                        "  ?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR,Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,Types.INTEGER}, 10000);
+                "INSERT INTO variant (" +
+                        " RGD_ID,REF_NUC, VARIANT_TYPE, VAR_NUC, RS_ID, CLINVAR_ID, SPECIES_TYPE_KEY) " +
+                        "VALUES (?,?,?,?,?,?,?)",
+                new int[]{Types.INTEGER,Types.VARCHAR,Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,Types.INTEGER});
         sql1.compile();
         for( VariantMapData v: mapsData) {
             long id = v.getId();
@@ -132,13 +140,28 @@ public class DAO {
         }
         sql1.flush();
     }
+
+    public void insertVariantExt(List<VariantMapData> mapsData)  throws Exception{
+        BatchSqlUpdate sql1 = new BatchSqlUpdate(this.getVariantDataSource(),
+                "INSERT INTO variant_ext (" +
+                        " RGD_ID,REF_NUC, VARIANT_TYPE, VAR_NUC, RS_ID, CLINVAR_ID, SPECIES_TYPE_KEY)" +
+                        "VALUES (?,?,?,?,?,?,?)",
+                new int[]{Types.INTEGER,Types.VARCHAR,Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,Types.INTEGER});
+        sql1.compile();
+        for( VariantMapData v: mapsData) {
+            long id = v.getId();
+            sql1.update(id, v.getReferenceNucleotide(), v.getVariantType(), v.getVariantNucleotide(), v.getRsId(), v.getClinvarId(), v.getSpeciesTypeKey());
+
+        }
+        sql1.flush();
+    }
+
     public void insertVariantMapData(List<VariantMapData> mapsData)  throws Exception{
         BatchSqlUpdate sql2 = new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant_map_data (\n" +
-                        " RGD_ID,CHROMOSOME,START_POS,END_POS,PADDING_BASE,GENIC_STATUS,MAP_KEY)\n" +
-                        "VALUES (\n" +
-                        " ?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR, Types.INTEGER, Types.INTEGER, Types.VARCHAR,Types.VARCHAR, Types.INTEGER}, 10000);
+                "INSERT INTO variant_map_data (" +
+                        " RGD_ID,CHROMOSOME,START_POS,END_POS,PADDING_BASE,GENIC_STATUS,MAP_KEY) " +
+                        "VALUES (?,?,?,?,?,?,?)",
+                new int[]{Types.INTEGER,Types.VARCHAR, Types.INTEGER, Types.INTEGER, Types.VARCHAR,Types.VARCHAR, Types.INTEGER});
         sql2.compile();
         for( VariantMapData v: mapsData) {
             long id = v.getId();
@@ -149,11 +172,10 @@ public class DAO {
 
     public int insertVariantSample(List<VariantSampleDetail> sampleData) throws Exception {
         BatchSqlUpdate bsu= new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant_sample_detail (\n" +
+                "INSERT INTO variant_sample_detail (" +
                         " RGD_ID,SOURCE,SAMPLE_ID,TOTAL_DEPTH,VAR_FREQ,ZYGOSITY_STATUS,ZYGOSITY_PERCENT_READ," +
-                        "ZYGOSITY_POSS_ERROR,ZYGOSITY_REF_ALLELE,ZYGOSITY_NUM_ALLELE,ZYGOSITY_IN_PSEUDO,QUALITY_SCORE)\n" +
-                        "VALUES (?,?,?,?,?,?,?," +
-                        "?,?,?,?,?)",
+                        "ZYGOSITY_POSS_ERROR,ZYGOSITY_REF_ALLELE,ZYGOSITY_NUM_ALLELE,ZYGOSITY_IN_PSEUDO,QUALITY_SCORE) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 new int[]{Types.INTEGER,Types.VARCHAR,Types.INTEGER, Types.INTEGER, Types.INTEGER,Types.VARCHAR, Types.INTEGER,
                         Types.VARCHAR,Types.VARCHAR, Types.INTEGER,Types.VARCHAR, Types.INTEGER}, 10000);
         bsu.compile();
