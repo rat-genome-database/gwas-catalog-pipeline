@@ -112,7 +112,7 @@ public class GWASCatImport {
             }
         }
         if (!insertExt.isEmpty()){
-            logger.info("\t\tInserting into VARIANT_EXT: "+insertExt.size());
+            logger.info("\t\tChecking all variants in VARIANT_EXT: "+insertExt.size());
             insertVariantsExt(insertExt);
         }
     }
@@ -235,7 +235,7 @@ public class GWASCatImport {
             dao.insertGwasXdbs(newXdbs);
         }
         if (!varExt.isEmpty()){
-            logger.info("\t\tVariants being entered into Variant Ext: " + varExt.size());
+            logger.info("\t\tVariants being checked in Variant Ext: " + varExt.size());
             insertVariantsExt(varExt);
         }
     }
@@ -245,6 +245,7 @@ public class GWASCatImport {
         List<VariantMapData> updateVmd = new ArrayList<>();
         List<VariantMapData> insert = new ArrayList<>();
         List<VariantSampleDetail> newDetails = new ArrayList<>();
+        HashMap<Long,VariantSampleDetail> detailHashMap = new HashMap<>();
         List<XdbId> newXdbs = new ArrayList<>();
         HashMap<XdbId,Boolean> studies = new HashMap<>();
 
@@ -290,6 +291,10 @@ public class GWASCatImport {
                                 newXdbs.add(x);
                             }
                         }
+                        if ( detailHashMap.get(vmd.getId()) == null ){
+                            VariantSampleDetail vsd = createGwasVariantSampleDetail(vmd);
+                            detailHashMap.put(vmd.getId(),vsd);
+                        }
                         found = true;
                         break;
                     }
@@ -325,6 +330,14 @@ public class GWASCatImport {
         if (!newDetails.isEmpty()){
             logger.info("       New Sample Details: "+newDetails.size());
             dao.insertVariantSample(newDetails);
+        }
+        if (!detailHashMap.isEmpty()){
+            List<VariantSampleDetail> samples = new ArrayList<>();
+            for (Long id : detailHashMap.keySet()){
+                samples.add(detailHashMap.get(id));
+            }
+            logger.info("\t\tNew Sample Details for Variant_EXT: "+samples.size());
+            dao.insertVariantSample(samples);
         }
         if (!newXdbs.isEmpty()){
             logger.info("       New XdbIds being added: "+newXdbs.size());

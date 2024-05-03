@@ -1,3 +1,6 @@
+5/3/2024
+updating gradle and improved logging
+
 4/23/2024
 updated for new VARIANT_EXT table to insert alleles that have same as reference or '?', so we have a RGDID ID for the QTLs
 
