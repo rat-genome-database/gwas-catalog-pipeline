@@ -27,6 +27,10 @@ public class Manager {
                         RemoveDuplicateInVar gcRemove = (RemoveDuplicateInVar) (bf.getBean("gwasDuplicateRemoval"));
                         gcRemove.run();
                         break;
+                    case "--withdrawOldVars":
+                        WithdrawVariants withdrawVariants = (WithdrawVariants) (bf.getBean("withdrawVars"));
+                        withdrawVariants.run();
+                        break;
                 }
             }
         }

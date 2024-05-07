@@ -1,3 +1,6 @@
+5/7/2024
+withdraw variants that have been missed by normal run
+
 5/3/2024
 updating gradle and improved logging
 

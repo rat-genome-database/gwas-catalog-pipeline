@@ -10,4 +10,7 @@
     <bean id="gwasDuplicateRemoval" class="edu.mcw.rgd.gwascatalog.RemoveDuplicateInVar">
         <property name="version" value="GWAS Catalog Remove Duplicate Values in Variant Tables -- build 2023-03-27"/>
     </bean>
+    <bean id="withdrawVars" class="edu.mcw.rgd.gwascatalog.WithdrawVariants">
+        <property name="version" value="GWAS Catalog Withdraw Variants -- build 2024-05-07"/>
+    </bean>
 </beans>

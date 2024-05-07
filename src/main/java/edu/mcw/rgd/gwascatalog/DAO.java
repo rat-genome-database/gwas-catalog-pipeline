@@ -12,7 +12,6 @@ import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FastaParser;
 import edu.mcw.rgd.process.Utils;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.BatchSqlUpdate;
@@ -124,6 +123,10 @@ public class DAO {
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         q.declareParameter(new SqlParameter(Types.INTEGER));
         return q.execute(38, g.getChr(), g.getPos());
+    }
+
+    public List<VariantMapData> getAllActiveVariantsByRsId(String rsId) throws Exception{
+        return variantDAO.getAllActiveVariantsByRsId(rsId);
     }
 
     public void insertVariants(List<VariantMapData> mapsData)  throws Exception{
@@ -261,14 +264,13 @@ public class DAO {
         return 1;
     }
 
-    public int withdrawVariants(List<Long> tobeWithdrawn, Logger logger) throws Exception{
+    public void withdrawVariants(Collection<Long> tobeWithdrawn, Logger logger) throws Exception{
         RGDManagementDAO mdao = new RGDManagementDAO();
         for (Long rgdId : tobeWithdrawn){
             RgdId id = new RgdId(rgdId.intValue());
-            logger.debug("RGD ID being withdrawn due to being duplicate: "+id.getRgdId());
+            logger.debug("RGD ID being withdrawn: "+id.getRgdId());
             mdao.withdraw(id);
         }
-        return 1;
     }
 
     public List<Long> getGWASRgdIds() throws Exception{
