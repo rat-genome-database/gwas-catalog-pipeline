@@ -19,7 +19,6 @@ public class GwasRgdIdAssign {
     protected Logger updated = LogManager.getLogger("updatedRgd");
 
     void run() throws Exception {
-        dao.setDataSource();
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         logger.info(getVersion());
         long pipeStart = System.currentTimeMillis();

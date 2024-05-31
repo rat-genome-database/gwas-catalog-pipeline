@@ -16,7 +16,6 @@ public class RemoveDuplicateInVar {
     protected Logger logger = LogManager.getLogger("dupeRemove");
     protected Logger dupeVars = LogManager.getLogger("dupeVars");
     void run() throws Exception {
-        dao.setDataSource();
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         logger.info(getVersion());
         long pipeStart = System.currentTimeMillis();

@@ -3,8 +3,8 @@ package edu.mcw.rgd.gwascatalog;
 import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.dao.impl.GWASCatalogDAO;
 import edu.mcw.rgd.dao.impl.RGDManagementDAO;
-import edu.mcw.rgd.dao.impl.VariantDAO;
 import edu.mcw.rgd.dao.impl.XdbIdDAO;
+import edu.mcw.rgd.dao.impl.variants.VariantDAO;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
 import edu.mcw.rgd.datamodel.*;
@@ -27,8 +27,7 @@ import java.util.List;
 
 public class DAO {
     private GWASCatalogDAO dao = new GWASCatalogDAO();
-    private VariantDAO vdao = new VariantDAO();
-    edu.mcw.rgd.dao.impl.variants.VariantDAO variantDAO = new edu.mcw.rgd.dao.impl.variants.VariantDAO();
+    VariantDAO vdao = new VariantDAO();
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
     private XdbIdDAO xdao = new XdbIdDAO();
     private int xdbKey = XdbId.XDB_KEY_GWAS;
@@ -59,14 +58,6 @@ public class DAO {
 
     public List<GWASCatalog> getGWASbyRsId(String rsId) throws Exception{
         return dao.getGWASListByRsId(rsId);
-    }
-
-    public void setDataSource() throws Exception{
-        vdao.setDataSource(DataSourceFactory.getInstance().getCarpeNovoDataSource());
-    }
-
-    public List<Variant> getVariants(int sampleId, String chr, long start, long stop)throws Exception{
-        return vdao.getVariants(sampleId, chr, start, stop);
     }
 
     public List<VariantMapData> getVariantsByRsId(String rsId) throws Exception{
@@ -126,73 +117,25 @@ public class DAO {
     }
 
     public List<VariantMapData> getAllActiveVariantsByRsId(String rsId) throws Exception{
-        return variantDAO.getAllActiveVariantsByRsId(rsId);
+        return vdao.getAllActiveVariantsByRsId(rsId);
     }
 
     public void insertVariants(List<VariantMapData> mapsData)  throws Exception{
-        BatchSqlUpdate sql1 = new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant (" +
-                        " RGD_ID,REF_NUC, VARIANT_TYPE, VAR_NUC, RS_ID, CLINVAR_ID, SPECIES_TYPE_KEY) " +
-                        "VALUES (?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR,Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,Types.INTEGER});
-        sql1.compile();
-        for( VariantMapData v: mapsData) {
-            long id = v.getId();
-            sql1.update(id, v.getReferenceNucleotide(), v.getVariantType(), v.getVariantNucleotide(), v.getRsId(), v.getClinvarId(), v.getSpeciesTypeKey());
-
-        }
-        sql1.flush();
+        vdao.insertVariantRgdIds(mapsData);
+        vdao.insertVariants(mapsData);
     }
 
     public void insertVariantExt(List<VariantMapData> mapsData)  throws Exception{
-        BatchSqlUpdate sql1 = new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant_ext (" +
-                        " RGD_ID,REF_NUC, VARIANT_TYPE, VAR_NUC, RS_ID, CLINVAR_ID, SPECIES_TYPE_KEY)" +
-                        "VALUES (?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR,Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,Types.INTEGER});
-        sql1.compile();
-        for( VariantMapData v: mapsData) {
-            long id = v.getId();
-            sql1.update(id, v.getReferenceNucleotide(), v.getVariantType(), v.getVariantNucleotide(), v.getRsId(), v.getClinvarId(), v.getSpeciesTypeKey());
-
-        }
-        sql1.flush();
+        vdao.insertVariantRgdIds(mapsData);
+        vdao.insertVariantExt(mapsData);
     }
 
     public void insertVariantMapData(List<VariantMapData> mapsData)  throws Exception{
-        BatchSqlUpdate sql2 = new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant_map_data (" +
-                        " RGD_ID,CHROMOSOME,START_POS,END_POS,PADDING_BASE,GENIC_STATUS,MAP_KEY) " +
-                        "VALUES (?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR, Types.INTEGER, Types.INTEGER, Types.VARCHAR,Types.VARCHAR, Types.INTEGER});
-        sql2.compile();
-        for( VariantMapData v: mapsData) {
-            long id = v.getId();
-            sql2.update(id, v.getChromosome(), v.getStartPos(), v.getEndPos(), v.getPaddingBase(), v.getGenicStatus(), v.getMapKey());
-        }
-        sql2.flush();
+        vdao.insertVariantMapData(mapsData);
     }
 
     public int insertVariantSample(List<VariantSampleDetail> sampleData) throws Exception {
-        BatchSqlUpdate bsu= new BatchSqlUpdate(this.getVariantDataSource(),
-                "INSERT INTO variant_sample_detail (" +
-                        " RGD_ID,SOURCE,SAMPLE_ID,TOTAL_DEPTH,VAR_FREQ,ZYGOSITY_STATUS,ZYGOSITY_PERCENT_READ," +
-                        "ZYGOSITY_POSS_ERROR,ZYGOSITY_REF_ALLELE,ZYGOSITY_NUM_ALLELE,ZYGOSITY_IN_PSEUDO,QUALITY_SCORE) " +
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                new int[]{Types.INTEGER,Types.VARCHAR,Types.INTEGER, Types.INTEGER, Types.INTEGER,Types.VARCHAR, Types.INTEGER,
-                        Types.VARCHAR,Types.VARCHAR, Types.INTEGER,Types.VARCHAR, Types.INTEGER}, 10000);
-        bsu.compile();
-        for(VariantSampleDetail v: sampleData ) {
-            bsu.update(v.getId(), v.getSource(), v.getSampleId(),v.getDepth(),v.getVariantFrequency(),v.getZygosityStatus(),v.getZygosityPercentRead(),
-                    v.getZygosityPossibleError(),v.getZygosityRefAllele(),v.getZygosityNumberAllele(),v.getZygosityInPseudo(),v.getQualityScore());
-        }
-        bsu.flush();
-        // compute nr of rows affected
-        int totalRowsAffected = 0;
-        for( int rowsAffected: bsu.getRowsAffected() ) {
-            totalRowsAffected += rowsAffected;
-        }
-        return totalRowsAffected;
+        return vdao.insertVariantSample(sampleData);
     }
 
     public void updateVariant(List<VariantMapData> mapsData) throws Exception {
@@ -300,6 +243,6 @@ public class DAO {
     }
 
     public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception{
-        return variantDAO.getVariantsByRgdId(rgdId);
+        return vdao.getVariantsByRgdId(rgdId);
     }
 }
