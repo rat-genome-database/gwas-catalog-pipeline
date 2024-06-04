@@ -120,13 +120,15 @@ public class DAO {
         return vdao.getAllActiveVariantsByRsId(rsId);
     }
 
-    public void insertVariants(List<VariantMapData> mapsData)  throws Exception{
-        vdao.insertVariantRgdIds(mapsData);
+    public void insertVariants(List<VariantMapData> mapsData, Logger log)  throws Exception{
+        int total = vdao.insertVariantRgdIds(mapsData);
+        log.info("\t\t\t\t\tAffected rows: " + total);
         vdao.insertVariants(mapsData);
     }
 
-    public void insertVariantExt(List<VariantMapData> mapsData)  throws Exception{
-        vdao.insertVariantRgdIds(mapsData);
+    public void insertVariantExt(List<VariantMapData> mapsData, Logger log)  throws Exception{
+        int total = vdao.insertVariantRgdIds(mapsData);
+        log.info("\t\t\t\t\tAffected rows: " + total);
         vdao.insertVariantExt(mapsData);
     }
 

@@ -223,7 +223,7 @@ public class GWASCatImport {
         if (!insert.isEmpty()){
             logger.info("       Variants being added: "+insert.size());
             List<VariantMapData> newInsert = removeDuplicates(insert, newDetails, newXdbs);
-            dao.insertVariants(newInsert);
+            dao.insertVariants(newInsert, logger);
             dao.insertVariantMapData(newInsert);
         }
         if (!newDetails.isEmpty()){
@@ -324,7 +324,7 @@ public class GWASCatImport {
         if (!insert.isEmpty()){
             logger.info("       Variant_Ext being added: "+insert.size());
             List<VariantMapData> newInsert = removeDuplicates(insert, newDetails, newXdbs);
-            dao.insertVariantExt(newInsert);
+            dao.insertVariantExt(newInsert, logger);
             dao.insertVariantMapData(newInsert);
         }
         if (!newDetails.isEmpty()){
