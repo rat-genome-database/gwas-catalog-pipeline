@@ -16,6 +16,8 @@ java {
 mainClassName = 'edu.mcw.rgd.gwascatalog.Manager'
 String myAppName = 'gwas-catalog-pipeline'
 
+project.archivesBaseName = myAppName
+
 repositories {
     mavenCentral()
 }
