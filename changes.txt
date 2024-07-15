@@ -1,3 +1,12 @@
+5/7/2024
+withdraw variants that have been missed by normal run
+
+5/3/2024
+updating gradle and improved logging
+
+4/23/2024
+updated for new VARIANT_EXT table to insert alleles that have same as reference or '?', so we have a RGDID ID for the QTLs
+
 12/12/2022
 updating script to not send email if nothing new
 
