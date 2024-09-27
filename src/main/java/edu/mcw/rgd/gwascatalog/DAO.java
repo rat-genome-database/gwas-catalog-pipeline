@@ -209,6 +209,17 @@ public class DAO {
         return 1;
     }
 
+    public int withdrawQTLs(Collection<GWASCatalog> withdraw) throws Exception{
+        RGDManagementDAO mdao = new RGDManagementDAO();
+        for (GWASCatalog g : withdraw){
+            if (g.getQtlRgdId()== null || g.getQtlRgdId()==0){
+                continue;
+            }
+            RgdId id = new RgdId(g.getQtlRgdId());
+            mdao.withdraw(id);
+        }
+        return 1;
+    }
     public void withdrawVariants(Collection<Long> tobeWithdrawn, Logger logger) throws Exception{
         RGDManagementDAO mdao = new RGDManagementDAO();
         for (Long rgdId : tobeWithdrawn){
