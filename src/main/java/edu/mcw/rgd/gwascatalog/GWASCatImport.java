@@ -75,7 +75,7 @@ public class GWASCatImport {
         if(!deleteMe.isEmpty()){
             logger.info("- - Total objects deleted: " + deleteMe.size());
             logInsDel(deleted, deleteMe);
-            dao.withdrawVariants(deleteMe);
+            dao.removeSampleDetailConnectionToVariant(deleteMe);
             dao.withdrawQTLs(deleteMe);
             dao.deleteGWASBatch(deleteMe);
         }
