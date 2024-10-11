@@ -116,6 +116,25 @@ public class DAO {
         return q.execute(38, g.getChr(), g.getPos());
     }
 
+    public List<VariantMapData> getAllVariants(GWASCatalog g) throws Exception{
+        String sql = """
+                select * from (
+                SELECT v.rgd_id,vm.END_POS,vm.START_POS,v.var_nuc, v.ref_nuc
+                FROM variant v, variant_map_data vm where v.rgd_id=vm.rgd_id and vm.map_key = ? and vm.chromosome = ? and vm.start_pos=?
+                UNION ALL
+                SELECT v.rgd_id,vmd.END_POS,vmd.START_POS,v.var_nuc, v.ref_nuc
+                FROM variant_ext v, variant_map_data vmd where v.rgd_id=vmd.rgd_id and vmd.map_key = ? and vmd.chromosome = ? and  vmd.start_pos=?
+                )""";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        return q.execute(38, g.getChr(), g.getPos(), 38, g.getChr(), g.getPos());
+    }
+
     public List<VariantMapData> getAllActiveVariantsByRsId(String rsId) throws Exception{
         return vdao.getAllActiveVariantsByRsId(rsId);
     }
@@ -186,27 +205,53 @@ public class DAO {
     }
     public int withdrawVariants(Collection<GWASCatalog> tobeWithdrawn) throws Exception{
         RGDManagementDAO mdao = new RGDManagementDAO();
+        List<Integer> ids = new ArrayList<>();
         for (GWASCatalog g : tobeWithdrawn){
 
             if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
                 continue;
-            if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?"))
-                continue;
+//            if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?"))
+//                continue;
 
-            List<VariantMapData> vars = getVariants(g);
+            List<VariantMapData> vars = getAllVariants(g);
             String ref = getRefAllele(38, g);
             for (VariantMapData vmd : vars){
 
-                    if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), g.getStrongSnpRiskallele()) &&
-                            Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
-                        RgdId id = new RgdId((int) vmd.getId());
+                if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), g.getStrongSnpRiskallele()) &&
+                        Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
+                    RgdId id = new RgdId((int) vmd.getId());
                     mdao.withdraw(id);
-                        break;
-                    }
+                    break;
                 }
-
+            }
         }
         return 1;
+    }
+
+    public int removeSampleDetailConnectionToVariant(Collection<GWASCatalog> tobeWithdrawn) throws Exception{
+        RGDManagementDAO mdao = new RGDManagementDAO();
+        List<Integer> ids = new ArrayList<>();
+        for (GWASCatalog g : tobeWithdrawn){
+
+            if (Utils.isStringEmpty(g.getChr()) || Utils.isStringEmpty(g.getPos()) || Utils.isStringEmpty(g.getSnps()) )
+                continue;
+//            if (g.getStrongSnpRiskallele()!=null && !g.getStrongSnpRiskallele().contains("?"))
+//                continue;
+
+            List<VariantMapData> vars = getAllVariants(g);
+            String ref = getRefAllele(38, g);
+            for (VariantMapData vmd : vars){
+
+                if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), g.getStrongSnpRiskallele()) &&
+                        Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
+                    // delete sample detail
+                    ids.add((int)vmd.getId());
+                    break;
+                }
+            }
+        }
+
+        return deleteSampleDetails(ids);
     }
 
     public int withdrawQTLs(Collection<GWASCatalog> withdraw) throws Exception{
@@ -257,5 +302,9 @@ public class DAO {
 
     public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception{
         return vdao.getVariantsByRgdId(rgdId);
+    }
+
+    public int deleteSampleDetails(List<Integer> ids) throws Exception{
+        return vdao.deleteSampleDetailByRgdIdAndSampleId(ids, 3);
     }
 }

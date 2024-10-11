@@ -1,3 +1,7 @@
+9/30/2024
+adding new method that get variants from variant and variant_ext
+adding method to replace withdrawVariants to remove sample detail
+
 5/7/2024
 withdraw variants that have been missed by normal run
 

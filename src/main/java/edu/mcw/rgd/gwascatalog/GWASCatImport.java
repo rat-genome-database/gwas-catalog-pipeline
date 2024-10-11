@@ -50,7 +50,7 @@ public class GWASCatImport {
                 // send incoming to method and check with DB
                 insertDeleteData(incoming);
             } catch (Exception e) {
-                logger.info(e);
+                Utils.printStackTrace(e, LogManager.getLogger("status"));
             }
             logger.info("   Total GWAS Catalog pipeline runtime -- elapsed time: "+
                     Utils.formatElapsedTime(pipeStart,System.currentTimeMillis()));
@@ -75,7 +75,7 @@ public class GWASCatImport {
         if(!deleteMe.isEmpty()){
             logger.info("- - Total objects deleted: " + deleteMe.size());
             logInsDel(deleted, deleteMe);
-            dao.withdrawVariants(deleteMe);
+            dao.removeSampleDetailConnectionToVariant(deleteMe);
             dao.withdrawQTLs(deleteMe);
             dao.deleteGWASBatch(deleteMe);
         }
@@ -149,6 +149,7 @@ public class GWASCatImport {
                 continue;
             if (g.getStrongSnpRiskallele()!=null && g.getStrongSnpRiskallele().contains("?")){
                 varExt.add(g);
+                continue;
             }
             if (g.getStrongSnpRiskallele()!=null){
                 // check if in db, and compare.
