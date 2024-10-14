@@ -1,3 +1,6 @@
+10/14/2024
+fixing getAllVariants method by correcting columns
+
 9/30/2024
 adding new method that get variants from variant and variant_ext
 adding method to replace withdrawVariants to remove sample detail
