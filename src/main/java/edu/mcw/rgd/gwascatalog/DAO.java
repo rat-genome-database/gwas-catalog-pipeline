@@ -119,10 +119,10 @@ public class DAO {
     public List<VariantMapData> getAllVariants(GWASCatalog g) throws Exception{
         String sql = """
                 select * from (
-                SELECT v.rgd_id,vm.END_POS,vm.START_POS,v.var_nuc, v.ref_nuc
+                SELECT v.*,vm.CHROMOSOME,vm.PADDING_BASE,vm.END_POS,vm.START_POS,vm.GENIC_STATUS,vm.MAP_KEY
                 FROM variant v, variant_map_data vm where v.rgd_id=vm.rgd_id and vm.map_key = ? and vm.chromosome = ? and vm.start_pos=?
                 UNION ALL
-                SELECT v.rgd_id,vmd.END_POS,vmd.START_POS,v.var_nuc, v.ref_nuc
+                SELECT v.*,vmd.CHROMOSOME,vmd.PADDING_BASE,vmd.END_POS,vmd.START_POS,vmd.GENIC_STATUS,vmd.MAP_KEY
                 FROM variant_ext v, variant_map_data vmd where v.rgd_id=vmd.rgd_id and vmd.map_key = ? and vmd.chromosome = ? and  vmd.start_pos=?
                 )""";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
