@@ -31,6 +31,10 @@ public class Manager {
                         WithdrawVariants withdrawVariants = (WithdrawVariants) (bf.getBean("withdrawVars"));
                         withdrawVariants.run();
                         break;
+                    case "--addVariantIds":
+                        RatGwas rg = (RatGwas) (bf.getBean("ratGwas"));
+                        rg.run();
+                        break;
                 }
             }
         }
