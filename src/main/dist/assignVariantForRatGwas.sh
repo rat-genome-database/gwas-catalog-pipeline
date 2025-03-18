@@ -14,6 +14,6 @@ cd $APPDIR
 
 java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -Dlog4j.configurationFile=file://$APPDIR/properties/log4j2.xml \
-    -jar lib/$APPNAME.jar --addVariantIds"$@" > run.log 2>&1
+    -jar lib/$APPNAME.jar --addVariantIds"$@" > runRat.log 2>&1
 
 [ -s $APPDIR/logs/ratSummary.log ] && mailx -s "[$SERVER] Rat GWAS Pipeline Run" $EMAILLIST < $APPDIR/logs/ratSummary.log

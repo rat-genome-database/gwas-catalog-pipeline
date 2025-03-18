@@ -65,8 +65,8 @@ public class RatGwas {
 
                 List<VariantMapData> variants = dao.getVariantsBySpecies(chr, pos, 3);
                 if (variants == null || variants.isEmpty()){
-                    logger.info("\tNo Variant found!");
-                    logger.info("\t\t"+lineData);
+                    logger.info("\tNo Variant found!\t"+chr+":"+pos);
+                    logger.debug("\t\t"+lineData);
                     bw.write(lineData+"\t\t\n");
                     notfound++;
                     continue;
@@ -81,8 +81,8 @@ public class RatGwas {
                 }
 
                 if (v == null){
-                    logger.info("\tVariant not found in given assembly!");
-                    logger.info("\t\t"+lineData);
+                    logger.info("\tVariant not found in given assembly!\t"+chr+":"+pos);
+                    logger.debug("\t\t"+lineData);
                     bw.write(lineData+"\t\t\n");
                     diffAsm++;
                     continue;
