@@ -48,6 +48,7 @@ public class RatGwas {
         String[] fileSplit = file.split("/");
         int notfound = 0;
         int diffAsm = 0;
+        int found = 0;
         try {
             BufferedReader br = openFile(file);
             BufferedWriter bw = new BufferedWriter(new FileWriter("updated_"+fileSplit[fileSplit.length-1]));
@@ -90,6 +91,7 @@ public class RatGwas {
 
                 if (!Utils.isStringEmpty(v.getRsId()) && !Utils.stringsAreEqual(v.getRsId(), ".")){
                     bw.write(lineData+"\t"+v.getRsId()+"\t"+v.getId()+"\n");
+                    found++;
                 }
                 else {
                     List<VariantSSId> ssIds = dao.getVariantSSIds((int) v.getId());
@@ -99,17 +101,22 @@ public class RatGwas {
                         builder.append(" ");
                     }
                     String ssid = builder.toString();
-                    if (Utils.isStringEmpty(ssid))
-                        bw.write(lineData+"\t\t"+v.getId()+"\n");
-                    else
-                        bw.write(lineData+"\t"+ssid.trim()+"\t"+v.getId()+"\n");
+                    if (Utils.isStringEmpty(ssid)) {
+                        bw.write(lineData + "\t\t" + v.getId() + "\n");
+                        found++;
+                    }
+                    else {
+                        bw.write(lineData + "\t" + ssid.trim() + "\t" + v.getId() + "\n");
+                        found++;
+                    }
                 }
             }
 
             br.close();
             bw.close();
 
-            logger.info("\tTotal Not Found: "+notfound);
+            logger.info("\tTotal found: "+ found);
+            logger.info("\tTotal not Found: "+notfound);
             logger.info("\tTotal in different Assembly: "+diffAsm);
         }
         catch (Exception e){
