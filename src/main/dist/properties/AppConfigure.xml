@@ -13,4 +13,13 @@
     <bean id="withdrawVars" class="edu.mcw.rgd.gwascatalog.WithdrawVariants">
         <property name="version" value="GWAS Catalog Withdraw Variants -- build 2024-05-07"/>
     </bean>
+    <bean id="ratGwas" class="edu.mcw.rgd.gwascatalog.RatGwas">
+        <property name="version" value="GWAS Catalog Pipeline -- build 2025-03-18"/>
+        <property name="ratFiles">
+            <map>
+                <entry key="360" value="data/rat/RAT_GWAS_phewasdb_rn6_Palmer.tsv"/>
+                <entry key="372" value="data/rat/Rat_GWAS_phewasdb_rn7_Palmer.tsv"/>
+            </map>
+        </property>
+    </bean>
 </beans>

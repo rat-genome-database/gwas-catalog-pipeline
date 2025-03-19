@@ -9,6 +9,7 @@ import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
 import edu.mcw.rgd.datamodel.*;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
+import edu.mcw.rgd.datamodel.variants.VariantSSId;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FastaParser;
 import edu.mcw.rgd.process.Utils;
@@ -31,6 +32,10 @@ public class DAO {
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
     private XdbIdDAO xdao = new XdbIdDAO();
     private int xdbKey = XdbId.XDB_KEY_GWAS;
+
+    public String getConnection(){
+        return vdao.getConnectionInfo();
+    }
 
     public int getXdbKey() {
         return xdbKey;
@@ -114,6 +119,24 @@ public class DAO {
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         q.declareParameter(new SqlParameter(Types.INTEGER));
         return q.execute(38, g.getChr(), g.getPos());
+    }
+
+    public List<VariantMapData> getVariants(String chr, int pos, int mapKey) throws Exception{
+        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? and vmd.start_pos=?";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        return q.execute(mapKey, chr, pos);
+    }
+
+    public List<VariantMapData> getVariantsBySpecies(String chr, int pos, int species) throws Exception{
+        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.species_type_key=? and vmd.chromosome=? and vmd.start_pos=?";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        return q.execute(species, chr, pos);
     }
 
     public List<VariantMapData> getAllVariants(GWASCatalog g) throws Exception{
@@ -306,5 +329,9 @@ public class DAO {
 
     public int deleteSampleDetails(List<Integer> ids) throws Exception{
         return vdao.deleteSampleDetailByRgdIdAndSampleId(ids, 3);
+    }
+
+    public List<VariantSSId> getVariantSSIds(int rgdId) throws Exception {
+        return vdao.getVariantSSIdsByRgdId(rgdId);
     }
 }
