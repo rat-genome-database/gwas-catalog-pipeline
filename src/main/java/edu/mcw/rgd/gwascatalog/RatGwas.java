@@ -60,6 +60,15 @@ public class RatGwas {
                 }
                 String[] splitLine = lineData.split("\t");
                 String chr = splitLine[0];
+//                21 = chrX
+//                22 = chrY
+//                24 = chrM/MT,
+                switch (chr) {
+                    case "21" -> chr = "X";
+                    case "22" -> chr = "Y";
+                    case "24" -> chr = "MT";
+                    default -> chr = splitLine[0];
+                }
                 int pos = Integer.parseInt(splitLine[2]);
                 String allele = splitLine[3];
                 String ref = splitLine[4];
