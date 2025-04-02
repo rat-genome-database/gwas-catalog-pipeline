@@ -45,6 +45,10 @@ public class DAO {
         return dao.getFullCatalog();
     }
 
+    public List<GWASCatalog> getGWASByMapKey(int mapKey) throws Exception {
+        return dao.getAllGWASByMapKey(mapKey);
+    }
+
     public List<XdbId> getGwasXdbs(int rgdId) throws Exception {
         return xdao.getXdbIdsByRgdId(getXdbKey(),rgdId);
     }

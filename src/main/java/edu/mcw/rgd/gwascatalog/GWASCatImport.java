@@ -59,7 +59,7 @@ public class GWASCatImport {
     }
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
-        List<GWASCatalog> inRgd = dao.getFullCatalog();
+        List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
         boolean insertExt = true;
