@@ -22,9 +22,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.Map;
 
 public class DAO {
     private GWASCatalogDAO dao = new GWASCatalogDAO();
@@ -32,6 +31,7 @@ public class DAO {
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
     private XdbIdDAO xdao = new XdbIdDAO();
     private int xdbKey = XdbId.XDB_KEY_GWAS;
+    private Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
     public String getConnection(){
         return vdao.getConnectionInfo();
@@ -132,6 +132,21 @@ public class DAO {
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         q.declareParameter(new SqlParameter(Types.INTEGER));
         return q.execute(mapKey, chr, pos);
+    }
+
+    public VariantMapData getVariantByChrPosRefAlleleMapKey(String chr, int pos, String ref, String allele, int mapKey) throws Exception{
+        String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? " +
+                "and vmd.start_pos=? and v.ref_nuc=? and v.var_nuc=?";
+        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.INTEGER));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        q.declareParameter(new SqlParameter(Types.VARCHAR));
+        List <VariantMapData> vars = q.execute(mapKey, chr, pos, ref, allele);
+        if (vars.isEmpty())
+            return null;
+        return vars.get(0);
     }
 
     public List<VariantMapData> getVariantsBySpecies(String chr, int pos, int species) throws Exception{
@@ -337,5 +352,17 @@ public class DAO {
 
     public List<VariantSSId> getVariantSSIds(int rgdId) throws Exception {
         return vdao.getVariantSSIdsByRgdId(rgdId);
+    }
+
+    boolean isGenic(int mapKey, String chr, int pos) throws Exception {
+
+        GeneCache geneCache = geneCacheMap.get(chr);
+        if( geneCache==null ) {
+            geneCache = new GeneCache();
+            geneCacheMap.put(chr, geneCache);
+            geneCache.loadCache(mapKey, chr, DataSourceFactory.getInstance().getDataSource());
+        }
+        List<Integer> geneRgdIds = geneCache.getGeneRgdIds(pos);
+        return !geneRgdIds.isEmpty();
     }
 }
