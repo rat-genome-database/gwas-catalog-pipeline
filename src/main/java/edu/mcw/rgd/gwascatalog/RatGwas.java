@@ -112,6 +112,7 @@ public class RatGwas {
             if (!newVars.isEmpty()){
                 logger.info("\tNew Variants being entered: "+newVars.size());
                 dao.insertVariants(newVars,varLog);
+                dao.insertVariantMapData(newVars);
             }
             if (!newSamples.isEmpty()){
                 logger.info("\tNew Variant Samples being entered: "+newSamples.size());
