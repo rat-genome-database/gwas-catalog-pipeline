@@ -105,7 +105,7 @@ public class RatGwas {
                 }
                 g.setVariantRgdId((int)var.getId());
 
-                if (Utils.isStringEmpty(var.getRsId()) && var.getRsId().startsWith("rs"))
+                if (!Utils.isStringEmpty(var.getRsId()) && var.getRsId().startsWith("rs"))
                     g.setSnps(var.getRsId());
 
                 g.setMapKey(mapKey);
