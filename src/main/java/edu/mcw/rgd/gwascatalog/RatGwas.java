@@ -104,7 +104,10 @@ public class RatGwas {
                     }
                 }
                 g.setVariantRgdId((int)var.getId());
-                g.setSnps(var.getRsId());
+                
+                if (var.getRsId().startsWith("rs"))
+                    g.setSnps(var.getRsId());
+
                 g.setMapKey(mapKey);
                 gwasList.add(g);
             }
