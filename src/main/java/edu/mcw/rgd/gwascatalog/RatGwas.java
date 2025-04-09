@@ -82,7 +82,8 @@ public class RatGwas {
                 g.setRiskAlleleFreq(splitLine[5]);
                 String beta = splitLine[6];
                 g.setOrBeta(beta);
-
+                String pVal = splitLine[8];
+                g.setpVal(pVal);
                 String traits = termMap.get(splitLine[12]);
                 if (Utils.isStringEmpty(traits))
                     continue;
