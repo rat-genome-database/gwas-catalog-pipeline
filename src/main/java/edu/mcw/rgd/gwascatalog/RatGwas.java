@@ -51,7 +51,8 @@ public class RatGwas {
 
     void insertIntoCatalog(int mapKey) throws Exception{
         String file = ratFiles.get(mapKey);
-        HashMap<String ,String> termMap = assignCmoVtMaps();
+        HashMap<String, String> termNames = new HashMap<>();
+        HashMap<String ,String> termMap = assignCmoVtMaps(termNames);
         List<VariantMapData> newVars = new ArrayList<>();
         List<VariantSampleDetail> newSamples = new ArrayList<>();
         List<GWASCatalog> gwasList = new ArrayList<>();
@@ -88,6 +89,7 @@ public class RatGwas {
                 if (Utils.isStringEmpty(traits))
                     continue;
                 g.setEfoId(traits);
+                g.setMapTrait(termNames.get(splitLine[12]));
 
                 VariantMapData var = dao.getVariantByChrPosRefAlleleMapKey(chr, pos, ref, allele, mapKey);
                 if (var == null) {
@@ -234,7 +236,7 @@ public class RatGwas {
         }
     }
 
-    HashMap<String, String> assignCmoVtMaps() throws Exception {
+    HashMap<String, String> assignCmoVtMaps(HashMap<String, String> termName) throws Exception {
         HashMap<String, String> terms = new HashMap<>();
         try (BufferedReader br = openFile(cmoVtTermFile)){
             String lineData;
@@ -249,14 +251,21 @@ public class RatGwas {
                     * 6 vt term 2
                     * 7 vt 2 ACC id     */
                 String trait = split[1];
+                String cmoName = split[2];
                 String cmo = split[3];
+                String vtName1= split[4];
                 String vt1 = split[5];
+                String vtName2 = split[6];
                 String vt2 = split[7];
                 StringBuilder sb = new StringBuilder();
+                StringBuilder sbName = new StringBuilder();
                 sb.append(cmo).append(",").append(vt1);
+                sbName.append(vtName1);
                 if (!Utils.isStringEmpty(vt2)){
                     sb.append(",").append(vt2);
+                    sbName.append(" and ").append(vtName2);
                 }
+                termName.put(trait,cmoName);
                 terms.put(trait, sb.toString());
             }
         }
