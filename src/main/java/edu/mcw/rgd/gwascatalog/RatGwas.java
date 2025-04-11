@@ -265,7 +265,7 @@ public class RatGwas {
                     sb.append(",").append(vt2);
                     sbName.append(" and ").append(vtName2);
                 }
-                termName.put(trait,cmoName);
+                termName.put(trait,sbName.toString());
                 terms.put(trait, sb.toString());
             }
         }
