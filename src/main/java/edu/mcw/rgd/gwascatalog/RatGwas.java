@@ -127,7 +127,7 @@ public class RatGwas {
             List<GWASCatalog> inDb = dao.getGWASByMapKey(mapKey);
             Collection<GWASCatalog> insert = CollectionUtils.subtract(gwasList, inDb);
             Collection<GWASCatalog> delete = CollectionUtils.subtract(inDb,gwasList);
-            Collection<GWASCatalog> existing = CollectionUtils.union(gwasList,inDb);
+            Collection<GWASCatalog> existing = CollectionUtils.intersection(gwasList,inDb);
             if (!insert.isEmpty()){
                 logger.info("\tNew Rat GWAS being entered: "+insert.size());
                 dao.insertGWASBatch(insert);
