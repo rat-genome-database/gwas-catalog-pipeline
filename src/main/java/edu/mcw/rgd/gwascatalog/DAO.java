@@ -5,6 +5,7 @@ import edu.mcw.rgd.dao.impl.GWASCatalogDAO;
 import edu.mcw.rgd.dao.impl.RGDManagementDAO;
 import edu.mcw.rgd.dao.impl.XdbIdDAO;
 import edu.mcw.rgd.dao.impl.variants.VariantDAO;
+import edu.mcw.rgd.dao.spring.GWASCatalogQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
 import edu.mcw.rgd.datamodel.*;
@@ -47,6 +48,20 @@ public class DAO {
 
     public List<GWASCatalog> getGWASByMapKey(int mapKey) throws Exception {
         return dao.getAllGWASByMapKey(mapKey);
+    }
+
+    public GWASCatalog getGWASbyChrPosPValMapKey(String chr, int pos, String pVal, int mapKey) throws Exception {
+        String sql = "SELECT * from GWAS_CATALOG WHERE CHROMOSOME=? AND POS=? AND P_VALUE=? AND OR_OR_BETA=? AND MAP_KEY=?";
+        GWASCatalogQuery gq = new GWASCatalogQuery(getDataSource(), sql);
+        gq.declareParameter(new SqlParameter(Types.VARCHAR));
+        gq.declareParameter(new SqlParameter(Types.VARCHAR));
+        gq.declareParameter(new SqlParameter(Types.VARCHAR));
+        gq.declareParameter(new SqlParameter(Types.VARCHAR));
+        gq.declareParameter(new SqlParameter(Types.INTEGER));
+        List<GWASCatalog> gwas = gq.execute(chr,pos,pVal,mapKey);
+        if (gwas.isEmpty())
+            return null;
+        return gwas.get(0);
     }
 
     public List<XdbId> getGwasXdbs(int rgdId) throws Exception {
@@ -235,6 +250,10 @@ public class DAO {
 
     public DataSource getVariantDataSource() throws Exception{
         return DataSourceFactory.getInstance().getCarpeNovoDataSource();
+    }
+
+    public DataSource getDataSource() throws Exception {
+        return dao.getDataSource();
     }
 
     public RgdId createRgdId(int objectKey, String objectStatus, String notes, int mapKey) throws Exception{

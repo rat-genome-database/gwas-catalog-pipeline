@@ -90,6 +90,7 @@ public class RatGwas {
                     continue;
                 g.setEfoId(traits);
                 g.setMapTrait(termNames.get(splitLine[12]));
+                g.setContext(splitLine[12]);
 
                 VariantMapData var = dao.getVariantByChrPosRefAlleleMapKey(chr, pos, ref, allele, mapKey);
                 if (var == null) {
@@ -112,6 +113,7 @@ public class RatGwas {
                     g.setSnps(var.getRsId());
 
                 g.setMapKey(mapKey);
+
                 gwasList.add(g);
             }
 
@@ -135,6 +137,7 @@ public class RatGwas {
             if (!delete.isEmpty()){
                 logger.info("\tRat GWAS being removed: "+delete.size());
                 dao.deleteGWASBatch(delete);
+                dao.withdrawQTLs(delete);
             }
             if (!existing.isEmpty()){
                 logger.info("\tRat GWAS unchanged: "+existing.size());
