@@ -52,9 +52,8 @@ public class DAO {
     }
 
     public GWASCatalog getGWASbyChrPosPValMapKey(String chr, String pos, BigDecimal pVal, int mapKey) throws Exception {
-        String sql = "SELECT * from GWAS_CATALOG WHERE CHROMOSOME=? AND POS=? AND P_VALUE=? AND OR_OR_BETA=? AND MAP_KEY=?";
+        String sql = "SELECT * from GWAS_CATALOG WHERE CHROMOSOME=? AND POS=? AND P_VALUE=? AND MAP_KEY=?";
         GWASCatalogQuery gq = new GWASCatalogQuery(getDataSource(), sql);
-        gq.declareParameter(new SqlParameter(Types.VARCHAR));
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
