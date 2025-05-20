@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.BatchSqlUpdate;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,7 +43,7 @@ public class DAO {
         return xdbKey;
     }
 
-    public List<GWASCatalog> getFullCatalog() throws Exception{
+    public List<GWASCatalog> getFullCatalog() throws Exception {
         return dao.getFullCatalog();
     }
 
@@ -50,7 +51,7 @@ public class DAO {
         return dao.getAllGWASByMapKey(mapKey);
     }
 
-    public GWASCatalog getGWASbyChrPosPValMapKey(String chr, int pos, String pVal, int mapKey) throws Exception {
+    public GWASCatalog getGWASbyChrPosPValMapKey(String chr, String pos, BigDecimal pVal, int mapKey) throws Exception {
         String sql = "SELECT * from GWAS_CATALOG WHERE CHROMOSOME=? AND POS=? AND P_VALUE=? AND OR_OR_BETA=? AND MAP_KEY=?";
         GWASCatalogQuery gq = new GWASCatalogQuery(getDataSource(), sql);
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
@@ -58,7 +59,7 @@ public class DAO {
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
         gq.declareParameter(new SqlParameter(Types.VARCHAR));
         gq.declareParameter(new SqlParameter(Types.INTEGER));
-        List<GWASCatalog> gwas = gq.execute(chr,pos,pVal,mapKey);
+        List<GWASCatalog> gwas = gq.execute(chr,pos,pVal.toString(),mapKey);
         if (gwas.isEmpty())
             return null;
         return gwas.get(0);
@@ -68,30 +69,42 @@ public class DAO {
         return xdao.getXdbIdsByRgdId(getXdbKey(),rgdId);
     }
 
-    public int insertGWASBatch(Collection<GWASCatalog> incoming) throws Exception{
+    public List<GWASVersion> getGwasVersion() throws Exception {
+        return dao.getAllGWASVersion();
+    }
+
+    public int insertGWASBatch(Collection<GWASCatalog> incoming) throws Exception {
         return dao.insertGWASBatch(incoming);
     }
 
-    public void deleteGWASBatch(Collection<GWASCatalog> deleting) throws Exception{
+    public int insertGWASVersionBatch(Collection<GWASVersion> incoming) throws Exception {
+        return dao.insertGWASVersionBatch(incoming);
+    }
+
+    public void deleteGWASBatch(Collection<GWASCatalog> deleting) throws Exception {
         dao.deleteGWASBatch(deleting);
     }
 
-    public int updateGWASBatch(Collection<GWASCatalog> update) throws Exception{
+    public void deleteGWASVersionBatch(Collection<GWASVersion> deleting) throws Exception {
+        dao.deleteGWASVersionBatch(deleting);
+    }
+
+    public int updateGWASBatch(Collection<GWASCatalog> update) throws Exception {
         return dao.updateGWASBatch(update);
     }
 
-    public List<GWASCatalog> getGWASbyRsId(String rsId) throws Exception{
+    public List<GWASCatalog> getGWASbyRsId(String rsId) throws Exception {
         return dao.getGWASListByRsId(rsId);
     }
 
-    public List<VariantMapData> getVariantsByRsId(String rsId) throws Exception{
+    public List<VariantMapData> getVariantsByRsId(String rsId) throws Exception {
         String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.rs_id=? and vmd.map_key=38";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         return q.execute(rsId);
     }
 
-    public List<VariantMapData> getActiveVariantsByRsId(String rsId) throws Exception{
+    public List<VariantMapData> getActiveVariantsByRsId(String rsId) throws Exception {
         String sql = "SELECT * FROM variant v, variant_map_data vmd, RGD_IDS r where v.rgd_id=vmd.rgd_id and v.rs_id=? and vmd.map_key=38 and r.rgd_id=v.rgd_id and r.OBJECT_STATUS='ACTIVE'";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.VARCHAR));
@@ -122,7 +135,7 @@ public class DAO {
         return fasta;
     }
 
-    public List<VariantMapData> getVariants(GWASCatalog g) throws Exception{
+    public List<VariantMapData> getVariants(GWASCatalog g) throws Exception {
         String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? and vmd.start_pos=?";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
@@ -131,7 +144,7 @@ public class DAO {
         return q.execute(38, g.getChr(), g.getPos());
     }
 
-    public List<VariantMapData> getVariantExt(GWASCatalog g) throws Exception{
+    public List<VariantMapData> getVariantExt(GWASCatalog g) throws Exception {
         String sql = "SELECT * FROM variant_ext v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? and vmd.start_pos=?";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
@@ -140,7 +153,7 @@ public class DAO {
         return q.execute(38, g.getChr(), g.getPos());
     }
 
-    public List<VariantMapData> getVariants(String chr, int pos, int mapKey) throws Exception{
+    public List<VariantMapData> getVariants(String chr, int pos, int mapKey) throws Exception {
         String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? and vmd.start_pos=?";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
@@ -149,7 +162,7 @@ public class DAO {
         return q.execute(mapKey, chr, pos);
     }
 
-    public VariantMapData getVariantByChrPosRefAlleleMapKey(String chr, int pos, String ref, String allele, int mapKey) throws Exception{
+    public VariantMapData getVariantByChrPosRefAlleleMapKey(String chr, int pos, String ref, String allele, int mapKey) throws Exception {
         String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where vmd.map_key=? and vmd.chromosome=? " +
                 "and vmd.start_pos=? and v.ref_nuc=? and v.var_nuc=?";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
@@ -164,7 +177,7 @@ public class DAO {
         return vars.get(0);
     }
 
-    public List<VariantMapData> getVariantsBySpecies(String chr, int pos, int species) throws Exception{
+    public List<VariantMapData> getVariantsBySpecies(String chr, int pos, int species) throws Exception {
         String sql = "SELECT * FROM variant v inner join variant_map_data vmd on v.rgd_id=vmd.rgd_id where v.species_type_key=? and vmd.chromosome=? and vmd.start_pos=?";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
@@ -173,7 +186,7 @@ public class DAO {
         return q.execute(species, chr, pos);
     }
 
-    public List<VariantMapData> getAllVariants(GWASCatalog g) throws Exception{
+    public List<VariantMapData> getAllVariants(GWASCatalog g) throws Exception {
         String sql = """
                 select * from (
                 SELECT v.*,vm.CHROMOSOME,vm.PADDING_BASE,vm.END_POS,vm.START_POS,vm.GENIC_STATUS,vm.MAP_KEY
@@ -192,23 +205,23 @@ public class DAO {
         return q.execute(38, g.getChr(), g.getPos(), 38, g.getChr(), g.getPos());
     }
 
-    public List<VariantMapData> getAllActiveVariantsByRsId(String rsId) throws Exception{
+    public List<VariantMapData> getAllActiveVariantsByRsId(String rsId) throws Exception {
         return vdao.getAllActiveVariantsByRsId(rsId);
     }
 
-    public void insertVariants(List<VariantMapData> mapsData, Logger log)  throws Exception{
+    public void insertVariants(List<VariantMapData> mapsData, Logger log)  throws Exception {
         int total = vdao.insertVariantRgdIds(mapsData);
         log.info("\t\t\t\t\tAffected rows: " + total);
         vdao.insertVariants(mapsData);
     }
 
-    public void insertVariantExt(List<VariantMapData> mapsData, Logger log)  throws Exception{
+    public void insertVariantExt(List<VariantMapData> mapsData, Logger log)  throws Exception {
         int total = vdao.insertVariantRgdIds(mapsData);
         log.info("\t\t\t\t\tAffected rows: " + total);
         vdao.insertVariantExt(mapsData);
     }
 
-    public void insertVariantMapData(List<VariantMapData> mapsData)  throws Exception{
+    public void insertVariantMapData(List<VariantMapData> mapsData)  throws Exception {
         vdao.insertVariantMapData(mapsData);
     }
 
@@ -228,7 +241,7 @@ public class DAO {
         sql2.flush();
     }
 
-    public List<VariantSampleDetail> getVariantSampleDetail(int rgdId, int sampleId) throws Exception{
+    public List<VariantSampleDetail> getVariantSampleDetail(int rgdId, int sampleId) throws Exception {
         String sql = "SELECT * FROM variant_sample_detail  WHERE rgd_id=? AND sample_id=?";
         VariantSampleQuery q = new VariantSampleQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
@@ -248,7 +261,7 @@ public class DAO {
         sql2.flush();
     }
 
-    public DataSource getVariantDataSource() throws Exception{
+    public DataSource getVariantDataSource() throws Exception {
         return DataSourceFactory.getInstance().getCarpeNovoDataSource();
     }
 
@@ -256,15 +269,15 @@ public class DAO {
         return dao.getDataSource();
     }
 
-    public RgdId createRgdId(int objectKey, String objectStatus, String notes, int mapKey) throws Exception{
+    public RgdId createRgdId(int objectKey, String objectStatus, String notes, int mapKey) throws Exception {
         int speciesKey= SpeciesType.getSpeciesTypeKeyForMap(mapKey);
         return managementDAO.createRgdId(objectKey, objectStatus, notes, speciesKey);
     }
 
-    public int insertGwasXdbs(List<XdbId> xdbs) throws Exception{
+    public int insertGwasXdbs(List<XdbId> xdbs) throws Exception {
         return xdao.insertXdbs(xdbs);
     }
-    public int withdrawVariants(Collection<GWASCatalog> tobeWithdrawn) throws Exception{
+    public int withdrawVariants(Collection<GWASCatalog> tobeWithdrawn) throws Exception {
         RGDManagementDAO mdao = new RGDManagementDAO();
         List<Integer> ids = new ArrayList<>();
         for (GWASCatalog g : tobeWithdrawn){
@@ -289,7 +302,7 @@ public class DAO {
         return 1;
     }
 
-    public int removeSampleDetailConnectionToVariant(Collection<GWASCatalog> tobeWithdrawn) throws Exception{
+    public int removeSampleDetailConnectionToVariant(Collection<GWASCatalog> tobeWithdrawn) throws Exception {
         RGDManagementDAO mdao = new RGDManagementDAO();
         List<Integer> ids = new ArrayList<>();
         for (GWASCatalog g : tobeWithdrawn){
@@ -315,7 +328,7 @@ public class DAO {
         return deleteSampleDetails(ids);
     }
 
-    public int withdrawQTLs(Collection<GWASCatalog> withdraw) throws Exception{
+    public int withdrawQTLs(Collection<GWASCatalog> withdraw) throws Exception {
         RGDManagementDAO mdao = new RGDManagementDAO();
         for (GWASCatalog g : withdraw){
             if (g.getQtlRgdId()== null || g.getQtlRgdId()==0){
@@ -326,7 +339,7 @@ public class DAO {
         }
         return 1;
     }
-    public void withdrawVariants(Collection<Long> tobeWithdrawn, Logger logger) throws Exception{
+    public void withdrawVariants(Collection<Long> tobeWithdrawn, Logger logger) throws Exception {
         RGDManagementDAO mdao = new RGDManagementDAO();
         for (Long rgdId : tobeWithdrawn){
             RgdId id = new RgdId(rgdId.intValue());
@@ -335,7 +348,7 @@ public class DAO {
         }
     }
 
-    public List<Long> getGWASRgdIds() throws Exception{
+    public List<Long> getGWASRgdIds() throws Exception {
         String sql = "select rgd_id from rgd_ids where notes like '%GWAS%' and object_status='ACTIVE'";
         List<Long> rgdIds = new ArrayList<>();
         Connection con = DataSourceFactory.getInstance().getDataSource().getConnection();
@@ -348,7 +361,7 @@ public class DAO {
         return rgdIds;
     }
 
-    public List<String> getGWASrsIds() throws Exception{
+    public List<String> getGWASrsIds() throws Exception {
         String sql = "select distinct(snps) from gwas_catalog";
         List<String> rsIds = new ArrayList<>();
         Connection con = DataSourceFactory.getInstance().getDataSource().getConnection();
@@ -361,11 +374,11 @@ public class DAO {
         return rsIds;
     }
 
-    public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception{
+    public List<VariantMapData> getVariantsbyRgdId(int rgdId) throws Exception {
         return vdao.getVariantsByRgdId(rgdId);
     }
 
-    public int deleteSampleDetails(List<Integer> ids) throws Exception{
+    public int deleteSampleDetails(List<Integer> ids) throws Exception {
         return vdao.deleteSampleDetailByRgdIdAndSampleId(ids, 3);
     }
 

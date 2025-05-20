@@ -1,6 +1,7 @@
 package edu.mcw.rgd.gwascatalog;
 
 import edu.mcw.rgd.datamodel.GWASCatalog;
+import edu.mcw.rgd.datamodel.GWASVersion;
 import edu.mcw.rgd.datamodel.RgdId;
 import edu.mcw.rgd.datamodel.SpeciesType;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
@@ -52,7 +53,8 @@ public class RatGwas {
     void insertIntoCatalog(int mapKey) throws Exception{
         String file = ratFiles.get(mapKey);
         HashMap<String, String> termNames = new HashMap<>();
-        HashMap<String ,String> termMap = assignCmoVtMaps(termNames);
+        HashMap<String, String> termMap = assignCmoVtMaps(termNames);
+        HashMap<String, List<String>> gwasVersionMap = new HashMap<>();
         List<VariantMapData> newVars = new ArrayList<>();
         List<VariantSampleDetail> newSamples = new ArrayList<>();
         List<GWASCatalog> gwasList = new ArrayList<>();
@@ -91,7 +93,7 @@ public class RatGwas {
                 g.setEfoId(traits);
                 g.setMapTrait(termNames.get(splitLine[12]));
                 g.setContext(splitLine[12]);
-
+                // splitLine[18] is version
                 VariantMapData var = dao.getVariantByChrPosRefAlleleMapKey(chr, pos, ref, allele, mapKey);
                 if (var == null) {
                     var = createMapData(g, ref, mapKey);
@@ -114,7 +116,28 @@ public class RatGwas {
 
                 g.setMapKey(mapKey);
 
-                gwasList.add(g);
+                GWASCatalog exist = dao.getGWASbyChrPosPValMapKey(g.getChr(),g.getPos(),g.getpVal(),g.getMapKey());
+                if (exist!=null){
+                    String ver = splitLine[18];
+                    List<String> versions = new ArrayList<>();
+                    versions.add(ver);
+                    gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                }
+                else if (gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal())==null) {
+                    gwasList.add(g);
+                    String ver = splitLine[18];
+                    List<String> versions = new ArrayList<>();
+                    versions.add(ver);
+                    gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                }
+                else {
+                    List<String> versions = gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal());
+                    String ver = splitLine[18];
+                    if (!versions.contains(ver)){
+                        versions.add(ver);
+                        gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                    }
+                }
             }
 
             if (!newVars.isEmpty()){
@@ -146,6 +169,32 @@ public class RatGwas {
         }
         catch (Exception e){
             Utils.printStackTrace(e,logger);
+        }
+        List<GWASVersion> allVersions = new ArrayList<>();
+        for (GWASCatalog g : gwasList){
+            List<String> versions = gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal());
+            for (String ver : versions){
+                GWASVersion gv = new GWASVersion();
+                gv.setGwasId(g.getGwasId());
+                gv.setVersion(ver);
+                if (!allVersions.contains(gv))
+                    allVersions.add(gv);
+            }
+        }
+        List<GWASVersion> inDb = dao.getGwasVersion();
+        Collection<GWASVersion> ins = CollectionUtils.subtract(allVersions, inDb);
+        Collection<GWASVersion> del = CollectionUtils.subtract(inDb, allVersions);
+        Collection<GWASVersion> exi = CollectionUtils.intersection(allVersions, inDb);
+        if (!ins.isEmpty()){
+            logger.info("GWAS Versions being entered: " + ins.size());
+            dao.insertGWASVersionBatch(ins);
+        }
+        if (!del.isEmpty()){
+            logger.info("GWAS Versions being deleted: " + del.size());
+            dao.deleteGWASVersionBatch(del);
+        }
+        if (!exi.isEmpty()){
+            logger.info("Versions unchanged: " + exi.size());
         }
     }
 
