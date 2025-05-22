@@ -118,6 +118,7 @@ public class RatGwas {
 
                 GWASCatalog exist = dao.getGWASbyChrPosPValMapKey(g.getChr(),g.getPos(),g.getpVal(),g.getMapKey());
                 if (exist!=null){
+                    g.setGwasId(dao.getNextRatGwasSeq());
                     String ver = splitLine[18];
                     List<String> versions = new ArrayList<>();
                     versions.add(ver);
@@ -154,7 +155,7 @@ public class RatGwas {
             Collection<GWASCatalog> existing = CollectionUtils.intersection(gwasVersionMap.keySet(),inDb);
             if (!insert.isEmpty()){
                 logger.info("\tNew Rat GWAS being entered: "+insert.size());
-                dao.insertGWASBatch(insert);
+                dao.insertGWASBatchWOSeq(insert);
             }
             if (!delete.isEmpty()){
                 logger.info("\tRat GWAS being removed: "+delete.size());
