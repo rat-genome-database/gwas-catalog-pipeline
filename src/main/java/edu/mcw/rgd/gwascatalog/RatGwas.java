@@ -57,7 +57,7 @@ public class RatGwas {
         HashMap<GWASCatalog, List<String>> gwasVersionMap = new HashMap<>();
         List<VariantMapData> newVars = new ArrayList<>();
         List<VariantSampleDetail> newSamples = new ArrayList<>();
-//        List<GWASCatalog> gwasList = new ArrayList<>();
+        List<GWASCatalog> gwasList = new ArrayList<>();
         try (BufferedReader br = openFile(file)) {
             String lineData;
             while ((lineData = br.readLine()) != null) {
@@ -164,13 +164,14 @@ public class RatGwas {
             if (!existing.isEmpty()){
                 logger.info("\tRat GWAS unchanged: "+existing.size());
             }
-
+            gwasList.addAll(insert);
+            gwasList.addAll(existing);
         }
         catch (Exception e){
             Utils.printStackTrace(e,logger);
         }
         List<GWASVersion> allVersions = new ArrayList<>();
-        for (GWASCatalog g : gwasVersionMap.keySet()){
+        for (GWASCatalog g : gwasList){
             List<String> versions = gwasVersionMap.get(g);
             for (String ver : versions){
                 GWASVersion gv = new GWASVersion();
