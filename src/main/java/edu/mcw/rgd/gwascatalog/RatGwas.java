@@ -174,6 +174,8 @@ public class RatGwas {
         List<GWASCatalog> gwasList = dao.getGWASByMapKey(mapKey);
         for (GWASCatalog g : gwasList){
             List<String> versions = gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal());
+            if (versions == null)
+                continue;
             for (String ver : versions){
                 GWASVersion gv = new GWASVersion();
                 gv.setGwasId(g.getGwasId());
