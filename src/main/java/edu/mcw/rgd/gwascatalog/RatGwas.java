@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -86,7 +87,11 @@ public class RatGwas {
                 String beta = splitLine[6];
                 g.setOrBeta(beta);
                 String pVal = splitLine[8];
-                g.setpVal(pVal);
+                BigDecimal d = new BigDecimal(pVal);
+                BigDecimal threshold = new BigDecimal(".000001");
+                if (d.compareTo(threshold) > 0) // if d > threshold then skip
+                    continue;
+                g.setpVal(pVal); // if pval is larger than 1E-6, skip
                 String traits = termMap.get(splitLine[12]);
                 if (Utils.isStringEmpty(traits))
                     continue;
