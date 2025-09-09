@@ -59,7 +59,7 @@ public class GWASCatImport {
     }
 
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
-        List<GWASCatalog> inRgd = dao.getFullCatalog();
+        List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
         boolean insertExt = true;
@@ -169,7 +169,7 @@ public class GWASCatImport {
                         if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), riskAllele ) &&
                                 Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
 
-                            String genicStat = isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
+                            String genicStat = dao.isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
                             if (!Utils.stringsAreEqual(genicStat,vmd.getGenicStatus())) {
                                 varLog.debug("Old genic status: "+vmd.getGenicStatus()+"|New Genic Status: " + genicStat);
                                 vmd.setGenicStatus(genicStat);
@@ -267,7 +267,7 @@ public class GWASCatImport {
                     if (Utils.stringsAreEqual(vmd.getVariantNucleotide(), riskAllele ) &&
                             Utils.stringsAreEqual(vmd.getReferenceNucleotide(), ref)) {
 
-                            String genicStat = isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
+                            String genicStat = dao.isGenic(38,vmd.getChromosome(),(int)vmd.getStartPos() ) ? "GENIC":"INTERGENIC";
                             if (!Utils.stringsAreEqual(genicStat,vmd.getGenicStatus())) {
                                 varLog.debug("Old genic status: "+vmd.getGenicStatus()+"|New Genic Status: " + genicStat);
                                 vmd.setGenicStatus(genicStat);
@@ -358,7 +358,7 @@ public class GWASCatImport {
         String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+","" );
         vmd.setVariantType(varType);
         vmd.setChromosome(g.getChr());
-        vmd.setGenicStatus( isGenic(38,g.getChr(),Integer.parseInt(g.getPos())) ? "GENIC":"INTERGENIC" );
+        vmd.setGenicStatus( dao.isGenic(38,g.getChr(),Integer.parseInt(g.getPos())) ? "GENIC":"INTERGENIC" );
         vmd.setStartPos( Integer.parseInt(g.getPos()) );
         vmd.setReferenceNucleotide(ref);
         vmd.setVariantNucleotide(riskAllele);
@@ -387,18 +387,6 @@ public class GWASCatImport {
         x.setSrcPipeline("GWAS Catalog");
         x.setXdbKey(dao.getXdbKey());
         return x;
-    }
-
-    boolean isGenic(int mapKey, String chr, int pos) throws Exception {
-
-        GeneCache geneCache = geneCacheMap.get(chr);
-        if( geneCache==null ) {
-            geneCache = new GeneCache();
-            geneCacheMap.put(chr, geneCache);
-            geneCache.loadCache(mapKey, chr, DataSourceFactory.getInstance().getDataSource());
-        }
-        List<Integer> geneRgdIds = geneCache.getGeneRgdIds(pos);
-        return !geneRgdIds.isEmpty();
     }
 
     String isNewFile() throws Exception {
@@ -496,7 +484,6 @@ public class GWASCatImport {
         }
         return newXdbs;
     }
-    Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
     public void setVersion(String version) {
         this.version = version;

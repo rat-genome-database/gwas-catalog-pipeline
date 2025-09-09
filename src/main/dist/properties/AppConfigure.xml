@@ -1,25 +1,31 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
    <bean id="gwasCatImport" class="edu.mcw.rgd.gwascatalog.GWASCatImport">
-       <property name="version" value="GWAS Catalog Pipeline -- build 2024-9-30"/>
+       <property name="version" value="GWAS Catalog Pipeline -- build 2025-04-02"/>
        <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>
    </bean>
+
     <bean id="gwasRgdIdAssign" class="edu.mcw.rgd.gwascatalog.GwasRgdIdAssign">
         <property name="version" value="GWAS Catalog RGD ID Assignment -- build 2022-05-09"/>
     </bean>
+
     <bean id="gwasDuplicateRemoval" class="edu.mcw.rgd.gwascatalog.RemoveDuplicateInVar">
         <property name="version" value="GWAS Catalog Remove Duplicate Values in Variant Tables -- build 2023-03-27"/>
     </bean>
+
     <bean id="withdrawVars" class="edu.mcw.rgd.gwascatalog.WithdrawVariants">
         <property name="version" value="GWAS Catalog Withdraw Variants -- build 2024-05-07"/>
     </bean>
+
     <bean id="ratGwas" class="edu.mcw.rgd.gwascatalog.RatGwas">
         <property name="version" value="GWAS Catalog Pipeline -- build 2025-03-18"/>
         <property name="ratFiles">
             <map>
-                <entry key="360" value="data/rat/RAT_GWAS_phewasdb_rn6_Palmer.tsv"/>
+<!--                <entry key="360" value="data/rat/RAT_GWAS_phewasdb_rn6_Palmer.tsv"/>-->
                 <entry key="372" value="data/rat/Rat_GWAS_phewasdb_rn7_Palmer.tsv"/>
             </map>
         </property>
+        <property name="sampleId" value="10"/>
+        <property name="cmoVtTermFile" value="data/rat/CMO-VT_terms_for_Rat_GWAS_Round_1.txt"/>
     </bean>
 </beans>

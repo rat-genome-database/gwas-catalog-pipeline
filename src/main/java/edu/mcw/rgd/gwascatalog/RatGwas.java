@@ -1,23 +1,31 @@
 package edu.mcw.rgd.gwascatalog;
 
+import edu.mcw.rgd.datamodel.GWASCatalog;
+import edu.mcw.rgd.datamodel.GWASVersion;
+import edu.mcw.rgd.datamodel.RgdId;
+import edu.mcw.rgd.datamodel.SpeciesType;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSSId;
+import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.Utils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 public class RatGwas {
 
     private String version;
     private Map<Integer, String> ratFiles;
+    private int sampleId;
+    private String cmoVtTermFile;
     protected Logger logger = LogManager.getLogger("ratStatus");
+    protected Logger varLog = LogManager.getLogger("variants");
     private SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private DAO dao = new DAO();
 
@@ -32,7 +40,7 @@ public class RatGwas {
         try{
             for (Integer mapKey : ratFiles.keySet()){
                 logger.info("Parsing file: "+ ratFiles.get(mapKey));
-                readAndWriteToFile(mapKey);
+                insertIntoCatalog(mapKey);
                 logger.info("-----------------------------------------");
             }
         }catch (Exception e){
@@ -41,6 +49,161 @@ public class RatGwas {
 
         logger.info(" Total Elapsed time -- elapsed time: "+
                 Utils.formatElapsedTime(pipeStart,System.currentTimeMillis())+"\n");
+    }
+
+    void insertIntoCatalog(int mapKey) throws Exception{
+        String file = ratFiles.get(mapKey);
+        HashMap<String, List<String>> gwasVersionMap = new HashMap<>();
+        try (BufferedReader br = openFile(file)) {
+            HashMap<String, String> termNames = new HashMap<>();
+            HashMap<String, String> termMap = assignCmoVtMaps(termNames);
+            List<GWASCatalog> gwas = new ArrayList<>();
+            List<VariantMapData> newVars = new ArrayList<>();
+            List<VariantSampleDetail> newSamples = new ArrayList<>();
+            String lineData;
+            while ((lineData = br.readLine()) != null) {
+                GWASCatalog g = new GWASCatalog();
+                if (lineData.startsWith("Chr")){
+                    continue;
+                }
+                String[] splitLine = lineData.split("\t");
+                String chr = splitLine[0];
+//                21 = chrX
+//                22 = chrY
+//                24 = chrM/MT,
+                switch (chr) {
+                    case "21" -> chr = "X";
+                    case "22" -> chr = "Y";
+                    case "24" -> chr = "MT";
+                    default -> chr = splitLine[0];
+                }
+                g.setChr(chr);
+                int pos = Integer.parseInt(splitLine[2]);
+                g.setPos(splitLine[2]);
+                String allele = splitLine[3];
+                g.setStrongSnpRiskallele(allele);
+                String ref = splitLine[4];
+                g.setRiskAlleleFreq(splitLine[5]);
+                String beta = splitLine[6];
+                g.setOrBeta(beta);
+                String pVal = splitLine[8];
+                BigDecimal d = new BigDecimal(pVal);
+                BigDecimal threshold = new BigDecimal(".000001");
+                if (d.compareTo(threshold) > 0) // if d > threshold then skip
+                    continue;
+                g.setpVal(pVal); // if pval is larger than 1E-6, skip
+                String traits = termMap.get(splitLine[12]);
+                if (Utils.isStringEmpty(traits))
+                    continue;
+                g.setEfoId(traits);
+                g.setMapTrait(termNames.get(splitLine[12]));
+                g.setContext(splitLine[12]);
+                // splitLine[18] is version
+                VariantMapData var = dao.getVariantByChrPosRefAlleleMapKey(chr, pos, ref, allele, mapKey);
+                if (var == null) {
+                    var = createMapData(g, ref, mapKey);
+                    newSamples.add(createGwasVariantSampleDetail(var));
+                    newVars.add(var);
+//                    continue;
+                }
+                else {
+                    // check sample details if one exists
+                    List<VariantSampleDetail> details = dao.getVariantSampleDetail((int)var.getId(),sampleId);
+                    if (details.isEmpty())
+                    {
+                        newSamples.add(createGwasVariantSampleDetail(var));
+                    }
+                }
+                g.setVariantRgdId((int)var.getId());
+
+                if (!Utils.isStringEmpty(var.getRsId()) && var.getRsId().startsWith("rs"))
+                    g.setSnps(var.getRsId());
+
+                g.setMapKey(mapKey);
+
+                GWASCatalog exist = dao.getGWASbyChrPosPValMapKey(g.getChr(),g.getPos(),g.getpVal(),g.getMapKey());
+                if (exist!=null){
+                    String ver = splitLine[18];
+                    List<String> versions = new ArrayList<>();
+                    versions.add(ver);
+                    gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                }
+                else if (gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal())==null) {
+                    String ver = splitLine[18];
+                    List<String> versions = new ArrayList<>();
+                    versions.add(ver);
+                    gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                    gwas.add(g);
+                }
+                else {
+                    List<String> versions = gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal());
+                    String ver = splitLine[18];
+                    if (!versions.contains(ver)){
+                        versions.add(ver);
+                        gwasVersionMap.put(g.getVariantRgdId()+"|"+g.getpVal(), versions);
+                    }
+                }
+            }
+
+            if (!newVars.isEmpty()){
+                logger.info("\tNew Variants being entered: "+newVars.size());
+                dao.insertVariants(newVars,varLog);
+                dao.insertVariantMapData(newVars);
+            }
+            if (!newSamples.isEmpty()){
+                logger.info("\tNew Variant Samples being entered: "+newSamples.size());
+                dao.insertVariantSample(newSamples);
+            }
+            List<GWASCatalog> inDb = dao.getGWASByMapKey(mapKey);
+            Collection<GWASCatalog> insert = CollectionUtils.subtract(gwas, inDb);
+            Collection<GWASCatalog> delete = CollectionUtils.subtract(inDb,gwas);
+            Collection<GWASCatalog> existing = CollectionUtils.intersection(gwas,inDb);
+            if (!insert.isEmpty()){
+                logger.info("\tNew Rat GWAS being entered: "+insert.size());
+                dao.insertGWASBatch(insert);
+            }
+            if (!delete.isEmpty()){
+                logger.info("\tRat GWAS being removed: "+delete.size());
+                dao.deleteGWASBatch(delete);
+                dao.withdrawQTLs(delete);
+            }
+            if (!existing.isEmpty()){
+                logger.info("\tRat GWAS unchanged: "+existing.size());
+            }
+        }
+        catch (Exception e){
+            Utils.printStackTrace(e,logger);
+        }
+
+        List<GWASVersion> allVersions = new ArrayList<>();
+        List<GWASCatalog> gwasList = dao.getGWASByMapKey(mapKey);
+        for (GWASCatalog g : gwasList){
+            List<String> versions = gwasVersionMap.get(g.getVariantRgdId()+"|"+g.getpVal());
+            if (versions == null)
+                continue;
+            for (String ver : versions){
+                GWASVersion gv = new GWASVersion();
+                gv.setGwasId(g.getGwasId());
+                gv.setVersion(ver);
+                if (!allVersions.contains(gv))
+                    allVersions.add(gv);
+            }
+        }
+        List<GWASVersion> inDb = dao.getGwasVersion();
+        Collection<GWASVersion> ins = CollectionUtils.subtract(allVersions, inDb);
+        Collection<GWASVersion> del = CollectionUtils.subtract(inDb, allVersions);
+        Collection<GWASVersion> exi = CollectionUtils.intersection(allVersions, inDb);
+        if (!ins.isEmpty()){
+            logger.info("GWAS Versions being entered: " + ins.size());
+            dao.insertGWASVersionBatch(ins);
+        }
+        if (!del.isEmpty()){
+            logger.info("GWAS Versions being deleted: " + del.size());
+            dao.deleteGWASVersionBatch(del);
+        }
+        if (!exi.isEmpty()){
+            logger.info("Versions unchanged: " + exi.size());
+        }
     }
 
     void readAndWriteToFile(int mapKey) throws Exception{
@@ -133,6 +296,71 @@ public class RatGwas {
         }
     }
 
+    HashMap<String, String> assignCmoVtMaps(HashMap<String, String> termName) throws Exception {
+        HashMap<String, String> terms = new HashMap<>();
+        try (BufferedReader br = openFile(cmoVtTermFile)){
+            String lineData;
+            while ((lineData = br.readLine()) != null){
+                String[] split = lineData.split("\t");
+                /*  * 0 project name
+                    * 1 trait
+                    * 2 cmo term
+                    * 3 cmo ACC id
+                    * 4 vt term 1
+                    * 5 vt 1 ACC id
+                    * 6 vt term 2
+                    * 7 vt 2 ACC id     */
+                String trait = split[1];
+                String cmoName = split[2];
+                String cmo = split[3];
+                String vtName1= split[4];
+                String vt1 = split[5];
+                String vtName2 = split[6];
+                String vt2 = split[7];
+                StringBuilder sb = new StringBuilder();
+                StringBuilder sbName = new StringBuilder();
+                sb.append(cmo).append(",").append(vt1);
+                sbName.append(vtName1);
+                if (!Utils.isStringEmpty(vt2)){
+                    sb.append(",").append(vt2);
+                    sbName.append(" and ").append(vtName2);
+                }
+                termName.put(trait,sbName.toString());
+                terms.put(trait, sb.toString());
+            }
+        }
+        return terms;
+    }
+
+    VariantMapData createMapData(GWASCatalog g, String ref, int mapKey) throws Exception{
+        VariantMapData vmd = new VariantMapData();
+        int speciesKey= SpeciesType.getSpeciesTypeKeyForMap(mapKey);
+        RgdId r = dao.createRgdId(RgdId.OBJECT_KEY_VARIANTS, "ACTIVE", "created by GWAS Catalog pipeline", mapKey);
+        vmd.setId(r.getRgdId());
+        vmd.setRsId(g.getSnps());
+        vmd.setSpeciesTypeKey(speciesKey);
+        String varType = "snv";
+        String riskAllele = g.getStrongSnpRiskallele().replaceAll("\\s+","" );
+        vmd.setVariantType(varType);
+        vmd.setChromosome(g.getChr());
+        vmd.setGenicStatus( dao.isGenic(mapKey,g.getChr(),Integer.parseInt(g.getPos())) ? "GENIC":"INTERGENIC" );
+        vmd.setStartPos( Integer.parseInt(g.getPos()) );
+        vmd.setReferenceNucleotide(ref);
+        vmd.setVariantNucleotide(riskAllele);
+        vmd.setEndPos(Integer.parseInt(g.getPos())+1);
+        vmd.setMapKey(mapKey);
+        return vmd;
+    }
+
+    public VariantSampleDetail createGwasVariantSampleDetail(VariantMapData vmd) throws Exception{
+        VariantSampleDetail vsd = new VariantSampleDetail();
+        vsd.setId(vmd.getId());
+        vsd.setSampleId( sampleId );
+        vsd.setDepth(9);
+        vsd.setVariantFrequency(1);
+        return vsd;
+    }
+
     private BufferedReader openFile(String fileName) throws IOException {
 
         String encoding = "UTF-8"; // default encoding
@@ -162,5 +390,21 @@ public class RatGwas {
 
     public Map<Integer, String> getRatFiles() {
         return ratFiles;
+    }
+
+    public void setSampleId(int sampleId) {
+        this.sampleId = sampleId;
+    }
+
+    public int getSampleId() {
+        return sampleId;
+    }
+
+    public void setCmoVtTermFile(String cmoVtTermFile) {
+        this.cmoVtTermFile = cmoVtTermFile;
+    }
+
+    public String getCmoVtTermFile() {
+        return cmoVtTermFile;
     }
 }

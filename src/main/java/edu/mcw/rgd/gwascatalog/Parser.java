@@ -93,6 +93,7 @@ public class Parser {
     {
 //        System.out.println(lineData);
         GWASCatalog gc = new GWASCatalog();
+        gc.setMapKey(38);
         String rowCol;
         String[] row = lineData.split("\t");
         for (int i = 0; i < row.length; i++) {
