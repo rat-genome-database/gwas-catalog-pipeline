@@ -31,6 +31,7 @@ public class Parser {
                 } else // if (i < 30)
                 {
                     GWASCatalog gc = parseLine(lineData, riskAllele, columns);
+                    gc.setMapKey(38);
                     ArrayList<GWASCatalog> splitData = copiedData(gc);
                     if (splitData != null)
                         list.addAll(splitData);
@@ -83,6 +84,7 @@ public class Parser {
                     carbon = new GWASCatalog(gc, listChr[i], listPos[i], riskAllele[i], snps[i]);
                 }
 //                System.out.println(gc.print());
+                carbon.setMapKey(38);
                 shallow.add(carbon);
             }
         }
