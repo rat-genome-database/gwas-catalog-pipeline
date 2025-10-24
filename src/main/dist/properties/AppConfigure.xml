@@ -3,6 +3,7 @@
    <bean id="gwasCatImport" class="edu.mcw.rgd.gwascatalog.GWASCatImport">
        <property name="version" value="GWAS Catalog Pipeline -- build 2025-04-02"/>
        <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>
+       <property name="deleteThreshold" value="5%"/>
    </bean>
 
     <bean id="gwasRgdIdAssign" class="edu.mcw.rgd.gwascatalog.GwasRgdIdAssign">

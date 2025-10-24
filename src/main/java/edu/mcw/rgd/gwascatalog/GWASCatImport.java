@@ -23,6 +23,7 @@ import java.util.*;
 public class GWASCatImport {
     private String version;
     private String gwasFile;
+    private String deleteThreshold;
     private DAO dao = new DAO();
 
     protected Logger logger = LogManager.getLogger("status");
@@ -58,35 +59,38 @@ public class GWASCatImport {
 
     }
 
-    void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception{
+    void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception {
         List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
-        Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming,inRgd);
-        boolean insertExt = true;
-        if (!inserting.isEmpty()){
-            logger.info("- - Total objects inserted: " + inserting.size());
-            logInsDel(inserted, inserting);
-            insertNewVariants(inserting); // used after initial load for new variants
-            dao.insertGWASBatch(inserting);
-            insertExt = false;
-        }
-
+        Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming, inRgd);
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
-        if(!deleteMe.isEmpty()){
-            logger.info("- - Total objects deleted: " + deleteMe.size());
-            logInsDel(deleted, deleteMe);
-            dao.removeSampleDetailConnectionToVariant(deleteMe);
-            dao.withdrawQTLs(deleteMe);
-            dao.deleteGWASBatch(deleteMe);
-        }
+        if (deletionThresholdCheck(deleteThreshold, deleteMe.size(), inRgd.size())){
+            boolean insertExt = true;
+            if (!inserting.isEmpty()) {
+                logger.info("- - Total objects inserted: " + inserting.size());
+                logInsDel(inserted, inserting);
+                insertNewVariants(inserting); // used after initial load for new variants
+                dao.insertGWASBatch(inserting);
+                insertExt = false;
+            }
 
-        Collection<GWASCatalog> match = CollectionUtils.intersection(incoming,inRgd);
-        if (!match.isEmpty()){
-            logger.info("- - Total matching objects: " + match.size());
-        }
 
-        if (insertExt){
-            insertNewVariantExt(inRgd);
+            if (!deleteMe.isEmpty()) {
+                logger.info("- - Total objects deleted: " + deleteMe.size());
+                logInsDel(deleted, deleteMe);
+                dao.removeSampleDetailConnectionToVariant(deleteMe);
+                dao.withdrawQTLs(deleteMe);
+                dao.deleteGWASBatch(deleteMe);
+            }
+
+            Collection<GWASCatalog> match = CollectionUtils.intersection(incoming, inRgd);
+            if (!match.isEmpty()) {
+                logger.info("- - Total matching objects: " + match.size());
+            }
+
+            if (insertExt) {
+                insertNewVariantExt(inRgd);
+            }
         }
     }
 
@@ -485,6 +489,16 @@ public class GWASCatImport {
         return newXdbs;
     }
 
+    boolean deletionThresholdCheck(String thresholdStr, int deletionCnt, int inRgdCnt) throws Exception{
+        int threshold = Integer.parseInt(thresholdStr.substring(0, thresholdStr.length()-1));
+        int deleteLimit = (threshold * inRgdCnt) / 100;
+        if (deletionCnt > deleteLimit) {
+            logger.warn("*** INSERT/DELETE of GWAS Data aborted! *** "+thresholdStr+" delete threshold exceeded!");
+            return false;
+        }
+        return true;
+    }
+
     public void setVersion(String version) {
         this.version = version;
     }
@@ -499,5 +513,13 @@ public class GWASCatImport {
 
     public String getGwasFile() {
         return gwasFile;
+    }
+
+    public void setDeleteThreshold(String deleteThreshold) {
+        this.deleteThreshold = deleteThreshold;
+    }
+
+    public String getDeleteThreshold(){
+        return deleteThreshold;
     }
 }
