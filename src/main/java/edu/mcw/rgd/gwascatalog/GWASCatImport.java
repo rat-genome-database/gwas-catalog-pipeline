@@ -494,6 +494,8 @@ public class GWASCatImport {
         int deleteLimit = (threshold * inRgdCnt) / 100;
         if (deletionCnt > deleteLimit) {
             logger.warn("*** INSERT/DELETE of GWAS Data aborted! *** "+thresholdStr+" delete threshold exceeded!");
+            logger.warn("*** Amount that is in RGD: " + inRgdCnt);
+            logger.warn("*** Amount that would have been deleted: " + deletionCnt);
             return false;
         }
         return true;
