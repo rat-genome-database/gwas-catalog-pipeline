@@ -1,8 +1,9 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
    <bean id="gwasCatImport" class="edu.mcw.rgd.gwascatalog.GWASCatImport">
-       <property name="version" value="GWAS Catalog Pipeline -- build 2025-04-02"/>
-       <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>
+       <property name="version" value="GWAS Catalog Pipeline -- build 2025-11-07"/>
+<!--       <property name="gwasFile" value="http://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated.tsv"/>-->
+       <property name="gwasFile" value="https://www.ebi.ac.uk/gwas/api/search/downloads/associations/v1.0?split=false"/>
        <property name="deleteThreshold" value="5%"/>
    </bean>
 

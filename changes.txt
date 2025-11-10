@@ -1,3 +1,7 @@
+11/07/2025
+updating download file and download to handle the zip file format for GWAS
+adding deletion threshold in case of issue with file
+
 04/02/2025
 added new column to gwas table for Rat gwas and updated human import accordingly
 
