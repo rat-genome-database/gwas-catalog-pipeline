@@ -35,7 +35,7 @@ public class GWASCatImport {
     void run() throws Exception
     {
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String myFile = isNewFile();
+        String myFile = isNewFile(); //downloadZipFile(gwasFile);
         Parser parser = new Parser();
 
         if (myFile != null) {
@@ -46,7 +46,7 @@ public class GWASCatImport {
         logger.info("   Pipeline started at "+sdt.format(new Date(pipeStart))+"\n");
 
             try {
-                ArrayList<GWASCatalog> incoming = parser.parse(myFile);
+                ArrayList<GWASCatalog> incoming = parser.processZip(myFile, logger);
                 logger.info("- - Total objects coming in: " + incoming.size());
                 // send incoming to method and check with DB
                 insertDeleteData(incoming);
@@ -128,6 +128,21 @@ public class GWASCatImport {
         downloader.setLocalFile("data/associations_ontology_annot.tsv");
         downloader.setUseCompression(true);
         downloader.setPrependDateStamp(true);
+        return downloader.downloadNew();
+    }
+
+    String downloadZipFile(String file) throws Exception {
+
+        FileDownloader downloader = new FileDownloader();
+        downloader.setExternalFile(file);
+        downloader.setLocalFile("data/associations_ontology_annot.zip");
+        downloader.setPrependDateStamp(true); // prefix downloaded files with the current date
+
+        // starting Jan 2017, HttpClient from apache commons had problems downloading files via HTTPS;
+        // therefore we switched to use native java URL object to download the file from PharmGKB
+        // it worked!
+        downloader.setDoNotUseHttpClient(true);
+
         return downloader.downloadNew();
     }
 
@@ -395,7 +410,7 @@ public class GWASCatImport {
 
     String isNewFile() throws Exception {
         File lastFile = getLastModified("data/");
-        String myFile = downloadFile(gwasFile);
+        String myFile = downloadZipFile(gwasFile);
         Path path = Paths.get(myFile);
         Path path2 = Paths.get(lastFile.getPath());
         try {

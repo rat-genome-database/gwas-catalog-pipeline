@@ -2,17 +2,77 @@ package edu.mcw.rgd.gwascatalog;
 
 import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.process.Utils;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class Parser {
     int cnt = 0;
+
+    public ArrayList<GWASCatalog> processZip(String file, Logger log) throws Exception{
+        ArrayList<GWASCatalog> result = new ArrayList<>();
+        try (ZipFile zipFile = new ZipFile(file)){
+            Enumeration enumeration = zipFile.entries();
+            while (enumeration.hasMoreElements()) {
+                ZipEntry zipEntry = (ZipEntry) enumeration.nextElement();
+                log.debug("  unzipping: " + zipEntry.getName());
+                if (!zipEntry.getName().endsWith("tsv")) {
+                    log.debug("  skipping file: " + zipEntry.getName());
+                    continue;
+                }
+
+                result.addAll(parse(zipFile.getInputStream(zipEntry)));
+            }
+        }
+        return result;
+    }
+
+    public ArrayList<GWASCatalog> parse(InputStream myFile) throws Exception
+    {
+        ArrayList<GWASCatalog> list = new ArrayList<>();
+        BufferedReader br = new BufferedReader(new InputStreamReader(myFile));
+        String lineData;
+        String[] col = null;
+        ArrayList<String> columns = new ArrayList<>();
+        int i = 0,riskAllele=0;
+        try {
+            while ((lineData = br.readLine()) != null) {
+                if (i == 0) {
+                    col = lineData.split("\t");
+                    columns = new ArrayList<String>(Arrays.asList(col));
+                    riskAllele = columns.indexOf("STRONGEST SNP-RISK ALLELE");
+//                System.out.println(riskAllele);
+                } else // if (i < 30)
+                {
+                    GWASCatalog gc = parseLine(lineData, riskAllele, columns);
+                    gc.setMapKey(38);
+                    ArrayList<GWASCatalog> splitData = copiedData(gc);
+                    if (splitData != null)
+                        list.addAll(splitData);
+                }
+
+                i++;
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        finally {
+            br.close();
+        }
+
+
+//        System.out.println(list.size());
+//        System.out.println(cnt);
+        return list;
+    }
     public ArrayList<GWASCatalog> parse(String myFile) throws Exception
     {
         ArrayList<GWASCatalog> list = new ArrayList<>();
@@ -96,9 +156,9 @@ public class Parser {
 //        System.out.println(lineData);
         GWASCatalog gc = new GWASCatalog();
         gc.setMapKey(38);
-        String rowCol;
         String[] row = lineData.split("\t");
         for (int i = 0; i < row.length; i++) {
+            String rowCol = row[i];
             switch (columns.get(i)){
                 case "DATE ADDED TO CATALOG":
                     break;
@@ -254,7 +314,8 @@ public class Parser {
                 case "PVALUE_MLOG":
                     //System.out.print(row[i]+"|");
                     //BigDecimal d = new BigDecimal(row[i], MathContext.DECIMAL64).stripTrailingZeros();
-                    gc.setpValMlog(Double.parseDouble(row[i]));
+                    if (!rowCol.isEmpty())
+                        gc.setpValMlog(Double.parseDouble(rowCol));
                     break;
                 case "P-VALUE (TEXT)":
                     break;
