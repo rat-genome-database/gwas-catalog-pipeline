@@ -156,9 +156,9 @@ public class Parser {
 //        System.out.println(lineData);
         GWASCatalog gc = new GWASCatalog();
         gc.setMapKey(38);
-        String rowCol;
         String[] row = lineData.split("\t");
         for (int i = 0; i < row.length; i++) {
+            String rowCol = row[i];
             switch (columns.get(i)){
                 case "DATE ADDED TO CATALOG":
                     break;
@@ -314,7 +314,8 @@ public class Parser {
                 case "PVALUE_MLOG":
                     //System.out.print(row[i]+"|");
                     //BigDecimal d = new BigDecimal(row[i], MathContext.DECIMAL64).stripTrailingZeros();
-                    gc.setpValMlog(Double.parseDouble(row[i]));
+                    if (!rowCol.isEmpty())
+                        gc.setpValMlog(Double.parseDouble(rowCol));
                     break;
                 case "P-VALUE (TEXT)":
                     break;
