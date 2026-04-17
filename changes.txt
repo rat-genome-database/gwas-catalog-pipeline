@@ -1,3 +1,6 @@
+04/17/2026
+added memory usage monitoring
+
 11/07/2025
 updating download file and download to handle the zip file format for GWAS
 adding deletion threshold in case of issue with file
