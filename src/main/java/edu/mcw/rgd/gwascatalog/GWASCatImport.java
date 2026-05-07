@@ -27,6 +27,7 @@ public class GWASCatImport {
     private DAO dao = new DAO();
 
     protected Logger logger = LogManager.getLogger("status");
+    protected Logger efoStatus = LogManager.getLogger("efoStatus");
     protected Logger inserted = LogManager.getLogger("inserted");
     protected Logger deleted = LogManager.getLogger("deleted");
     protected Logger xdbLog = LogManager.getLogger("xdbSummary");
@@ -62,7 +63,7 @@ public class GWASCatImport {
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception {
         List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
-        Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming, inRgd);
+        Collection<GWASCatalog> inserting = subtractPreservingEfoId(incoming, inRgd);
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
         if (deletionThresholdCheck(deleteThreshold, deleteMe.size(), inRgd.size())){
             boolean insertExt = true;
@@ -92,6 +93,60 @@ public class GWASCatImport {
                 insertNewVariantExt(inRgd);
             }
         }
+    }
+
+    // Returns elements in `a` that have no equivalent in `b` when compared on every field
+    // used by GWASCatalog.equals() except efoId. For each match found, the efoId from the
+    // old record (in `b`) is copied onto the new record (in `a`) so the existing EFO id is
+    // preserved across re-imports.
+    Collection<GWASCatalog> subtractPreservingEfoId(Collection<GWASCatalog> a, Collection<GWASCatalog> b) {
+        Collection<GWASCatalog> result = new ArrayList<>();
+        Set<String> loggedTransitions = new HashSet<>();
+        for (GWASCatalog ga : a) {
+            GWASCatalog match = null;
+            for (GWASCatalog gb : b) {
+                if (equalsIgnoringEfoId(ga, gb)) {
+                    match = gb;
+                    break;
+                }
+            }
+            if (match == null) {
+                result.add(ga);
+            } else {
+                if (!Utils.stringsAreEqual(ga.getEfoId(), match.getEfoId())) {
+                    String key = match.getEfoId()+" -> "+ga.getEfoId();
+                    if (loggedTransitions.add(key)) {
+                        efoStatus.info("Preserving efoId -- old: "+match.getEfoId()+" | new: "+ga.getEfoId());
+                    }
+                }
+                ga.setEfoId(match.getEfoId());
+            }
+        }
+        return result;
+    }
+
+    private static boolean equalsIgnoringEfoId(GWASCatalog a, GWASCatalog b) {
+        return Utils.stringsAreEqual(a.getPmid(), b.getPmid())
+                && Utils.stringsAreEqual(a.getDiseaseTrait(), b.getDiseaseTrait())
+                && Utils.stringsAreEqual(a.getInitialSample(), b.getInitialSample())
+                && Utils.stringsAreEqual(a.getReplicateSample(), b.getReplicateSample())
+                && Utils.stringsAreEqual(a.getRegion(), b.getRegion())
+                && Utils.stringsAreEqual(a.getChr(), b.getChr())
+                && Utils.stringsAreEqual(a.getPos(), b.getPos())
+                && Utils.stringsAreEqual(a.getReportedGenes(), b.getReportedGenes())
+                && Utils.stringsAreEqual(a.getMappedGene(), b.getMappedGene())
+                && Utils.stringsAreEqual(a.getStrongSnpRiskallele(), b.getStrongSnpRiskallele())
+                && Utils.stringsAreEqual(a.getSnps(), b.getSnps())
+                && Utils.stringsAreEqual(a.getCurSnpId(), b.getCurSnpId())
+                && Utils.stringsAreEqual(a.getContext(), b.getContext())
+                && Utils.stringsAreEqual(a.getRiskAlleleFreq(), b.getRiskAlleleFreq())
+                && Utils.stringsAreEqual(a.getpValStr(), b.getpValStr())
+                && Utils.doublesAreEqual(a.getpValMlog(), b.getpValMlog(), 10)
+                && Utils.stringsAreEqual(a.getSnpPassQc(), b.getSnpPassQc())
+                && Utils.stringsAreEqual(a.getMapTrait(), b.getMapTrait())
+                && Utils.stringsAreEqual(a.getStudyAcc(), b.getStudyAcc())
+                && Utils.stringsAreEqual(a.getOrBeta(), b.getOrBeta())
+                && a.getMapKey() == b.getMapKey();
     }
 
     void insertNewVariantExt(List<GWASCatalog> incoming) throws Exception {

@@ -22,6 +22,16 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+        <RollingFile name="efoStatus" append="true" fileName="logs/efoStatus.log" filePattern="logs/efoStatus.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="efoSummary" append="false" fileName="logs/efoSummary.log">
+            <PatternLayout pattern="%m%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
         <File name="ratSummary" append="false" fileName="logs/ratSummary.log">
             <PatternLayout pattern="%m%n"/>
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
@@ -102,6 +112,11 @@
         <Logger name="status" level="info" additivity="false">
             <AppenderRef ref="status"/>
             <AppenderRef ref="summary"/><!-- human readable -->
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="efoStatus" level="info" additivity="false">
+            <AppenderRef ref="efoStatus"/>
+            <AppenderRef ref="efoSummary"/><!-- human readable -->
             <AppenderRef ref="Console" level="info"/>
         </Logger>
         <Logger name="ratStatus" level="info" additivity="false">

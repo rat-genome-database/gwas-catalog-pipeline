@@ -6,6 +6,7 @@
 APPNAME="gwas-catalog-pipeline"
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
 EMAILLIST="mtutaj@mcw.edu llamers@mcw.edu"
+EMAILLIST2="slaulede@mcw.edu cpark@mcw.edu jrsmith@mcw.edu llamers@mcw.edu"
 if [ "$SERVER" == "REED" ]; then
   EMAILLIST="llamers@mcw.edu mtutaj@mcw.edu jrsmith@mcw.edu akwitek@mcw.edu"
 fi
@@ -17,3 +18,4 @@ java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -jar lib/$APPNAME.jar --importAssoc"$@" > run.log 2>&1
 
 [ -s $APPDIR/logs/summary.log ] && mailx -s "[$SERVER] GWAS Catalog Pipeline Run" $EMAILLIST < $APPDIR/logs/summary.log
+[ -s $APPDIR/logs/efoSummary.log ] && mailx -s "[$SERVER] GWAS Catalog Pipeline Run" $EMAILLIST2 < $APPDIR/logs/efoSummary.log
