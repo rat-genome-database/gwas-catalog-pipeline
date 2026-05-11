@@ -63,7 +63,8 @@ public class GWASCatImport {
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception {
         List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
-        Collection<GWASCatalog> inserting = subtractPreservingEfoId(incoming, inRgd);
+        logEfoIdChanges(incoming, inRgd);
+        Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming, inRgd);
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
         if (deletionThresholdCheck(deleteThreshold, deleteMe.size(), inRgd.size())){
             boolean insertExt = true;
@@ -95,34 +96,25 @@ public class GWASCatImport {
         }
     }
 
-    // Returns elements in `a` that have no equivalent in `b` when compared on every field
-    // used by GWASCatalog.equals() except efoId. For each match found, the efoId from the
-    // old record (in `b`) is copied onto the new record (in `a`) so the existing EFO id is
-    // preserved across re-imports.
-    Collection<GWASCatalog> subtractPreservingEfoId(Collection<GWASCatalog> a, Collection<GWASCatalog> b) {
-        Collection<GWASCatalog> result = new ArrayList<>();
+    // Logs each unique old -> new EFO id transition where an incoming record matches an
+    // existing record on every field used by GWASCatalog.equals() except efoId. Surfaces
+    // which EFO ids changed so related tables can be updated; does not mutate either
+    // collection.
+    void logEfoIdChanges(Collection<GWASCatalog> incoming, Collection<GWASCatalog> inRgd) {
         Set<String> loggedTransitions = new HashSet<>();
-        for (GWASCatalog ga : a) {
-            GWASCatalog match = null;
-            for (GWASCatalog gb : b) {
+        for (GWASCatalog ga : incoming) {
+            for (GWASCatalog gb : inRgd) {
                 if (equalsIgnoringEfoId(ga, gb)) {
-                    match = gb;
+                    if (!Utils.stringsAreEqual(ga.getEfoId(), gb.getEfoId())) {
+                        String key = gb.getEfoId()+" -> "+ga.getEfoId();
+                        if (loggedTransitions.add(key)) {
+                            efoStatus.info("EFO id change -- old: "+gb.getEfoId()+" | new: "+ga.getEfoId());
+                        }
+                    }
                     break;
                 }
             }
-            if (match == null) {
-                result.add(ga);
-            } else {
-                if (!Utils.stringsAreEqual(ga.getEfoId(), match.getEfoId())) {
-                    String key = match.getEfoId()+" -> "+ga.getEfoId();
-                    if (loggedTransitions.add(key)) {
-                        efoStatus.info("Preserving efoId -- old: "+match.getEfoId()+" | new: "+ga.getEfoId());
-                    }
-                }
-                ga.setEfoId(match.getEfoId());
-            }
         }
-        return result;
     }
 
     private static boolean equalsIgnoringEfoId(GWASCatalog a, GWASCatalog b) {
