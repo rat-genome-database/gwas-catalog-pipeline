@@ -17,6 +17,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -101,44 +102,51 @@ public class GWASCatImport {
     // which EFO ids changed so related tables can be updated; does not mutate either
     // collection.
     void logEfoIdChanges(Collection<GWASCatalog> incoming, Collection<GWASCatalog> inRgd) {
+        Map<EfoMatchKey, GWASCatalog> inRgdByKey = new HashMap<>(inRgd.size() * 2);
+        for (GWASCatalog gb : inRgd) {
+            inRgdByKey.putIfAbsent(EfoMatchKey.of(gb), gb);
+        }
         Set<String> loggedTransitions = new HashSet<>();
         for (GWASCatalog ga : incoming) {
-            for (GWASCatalog gb : inRgd) {
-                if (equalsIgnoringEfoId(ga, gb)) {
-                    if (!Utils.stringsAreEqual(ga.getEfoId(), gb.getEfoId())) {
-                        String key = gb.getEfoId()+" -> "+ga.getEfoId();
-                        if (loggedTransitions.add(key)) {
-                            efoStatus.info("EFO id change -- old: "+gb.getEfoId()+" | new: "+ga.getEfoId());
-                        }
-                    }
-                    break;
+            GWASCatalog gb = inRgdByKey.get(EfoMatchKey.of(ga));
+            if (gb == null) continue;
+            if (!Utils.stringsAreEqual(ga.getEfoId(), gb.getEfoId())) {
+                String key = gb.getEfoId() + " -> " + ga.getEfoId();
+                if (loggedTransitions.add(key)) {
+                    efoStatus.info("EFO id change -- old: " + gb.getEfoId() + " | new: " + ga.getEfoId());
                 }
             }
         }
     }
 
-    private static boolean equalsIgnoringEfoId(GWASCatalog a, GWASCatalog b) {
-        return Utils.stringsAreEqual(a.getPmid(), b.getPmid())
-                && Utils.stringsAreEqual(a.getDiseaseTrait(), b.getDiseaseTrait())
-                && Utils.stringsAreEqual(a.getInitialSample(), b.getInitialSample())
-                && Utils.stringsAreEqual(a.getReplicateSample(), b.getReplicateSample())
-                && Utils.stringsAreEqual(a.getRegion(), b.getRegion())
-                && Utils.stringsAreEqual(a.getChr(), b.getChr())
-                && Utils.stringsAreEqual(a.getPos(), b.getPos())
-                && Utils.stringsAreEqual(a.getReportedGenes(), b.getReportedGenes())
-                && Utils.stringsAreEqual(a.getMappedGene(), b.getMappedGene())
-                && Utils.stringsAreEqual(a.getStrongSnpRiskallele(), b.getStrongSnpRiskallele())
-                && Utils.stringsAreEqual(a.getSnps(), b.getSnps())
-                && Utils.stringsAreEqual(a.getCurSnpId(), b.getCurSnpId())
-                && Utils.stringsAreEqual(a.getContext(), b.getContext())
-                && Utils.stringsAreEqual(a.getRiskAlleleFreq(), b.getRiskAlleleFreq())
-                && Utils.stringsAreEqual(a.getpValStr(), b.getpValStr())
-                && Utils.doublesAreEqual(a.getpValMlog(), b.getpValMlog(), 10)
-                && Utils.stringsAreEqual(a.getSnpPassQc(), b.getSnpPassQc())
-                && Utils.stringsAreEqual(a.getMapTrait(), b.getMapTrait())
-                && Utils.stringsAreEqual(a.getStudyAcc(), b.getStudyAcc())
-                && Utils.stringsAreEqual(a.getOrBeta(), b.getOrBeta())
-                && a.getMapKey() == b.getMapKey();
+    // Hash key matching the equality semantics previously in equalsIgnoringEfoId:
+    // null strings are normalized to "" (matches Utils.stringsAreEqual), and pValMlog
+    // is formatted to 10 fraction digits (matches Utils.doublesAreEqual(..., 10)).
+    private record EfoMatchKey(
+            String pmid, String diseaseTrait, String initialSample, String replicateSample,
+            String region, String chr, String pos, String reportedGenes, String mappedGene,
+            String strongSnpRiskallele, String snps, String curSnpId, String context,
+            String riskAlleleFreq, String pValStr, String pValMlog10, String snpPassQc,
+            String mapTrait, String studyAcc, String orBeta, int mapKey) {
+
+        static EfoMatchKey of(GWASCatalog g) {
+            return new EfoMatchKey(
+                    n(g.getPmid()), n(g.getDiseaseTrait()), n(g.getInitialSample()), n(g.getReplicateSample()),
+                    n(g.getRegion()), n(g.getChr()), n(g.getPos()), n(g.getReportedGenes()), n(g.getMappedGene()),
+                    n(g.getStrongSnpRiskallele()), n(g.getSnps()), n(g.getCurSnpId()), n(g.getContext()),
+                    n(g.getRiskAlleleFreq()), n(g.getpValStr()), formatMlog(g.getpValMlog()), n(g.getSnpPassQc()),
+                    n(g.getMapTrait()), n(g.getStudyAcc()), n(g.getOrBeta()), g.getMapKey());
+        }
+
+        private static String n(String s) { return s == null ? "" : s; }
+
+        private static String formatMlog(Double d) {
+            if (d == null) d = 0.0;
+            DecimalFormat df = new DecimalFormat();
+            df.setMinimumFractionDigits(10);
+            df.setMaximumFractionDigits(10);
+            return df.format(d);
+        }
     }
 
     void insertNewVariantExt(List<GWASCatalog> incoming) throws Exception {

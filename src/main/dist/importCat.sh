@@ -6,9 +6,10 @@
 APPNAME="gwas-catalog-pipeline"
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
 EMAILLIST="mtutaj@mcw.edu llamers@mcw.edu"
-EMAILLIST2="slaulede@mcw.edu cpark@mcw.edu jrsmith@mcw.edu llamers@mcw.edu"
+EMAILLIST2="slaulede@mcw.edu llamers@mcw.edu"
 if [ "$SERVER" == "REED" ]; then
   EMAILLIST="llamers@mcw.edu mtutaj@mcw.edu jrsmith@mcw.edu akwitek@mcw.edu"
+  EMAILLIST2="slaulede@mcw.edu cpark@mcw.edu jrsmith@mcw.edu llamers@mcw.edu"
 fi
 APPDIR=/home/rgddata/pipelines/$APPNAME
 cd $APPDIR
