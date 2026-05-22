@@ -5,6 +5,7 @@ import edu.mcw.rgd.datamodel.GWASCatalog;
 import edu.mcw.rgd.datamodel.RgdId;
 import edu.mcw.rgd.datamodel.SpeciesType;
 import edu.mcw.rgd.datamodel.XdbId;
+import edu.mcw.rgd.datamodel.ontologyx.TermSynonym;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import edu.mcw.rgd.process.FileDownloader;
@@ -64,7 +65,7 @@ public class GWASCatImport {
     void insertDeleteData(ArrayList<GWASCatalog> incoming) throws Exception {
         List<GWASCatalog> inRgd = dao.getGWASByMapKey(38);
 //        insertNewVariants(inRgd); // initial load
-        logEfoIdChanges(incoming, inRgd);
+        List<GWASCatalog> qtlCarriedOver = handleEfoIdChanges(incoming, inRgd);
         Collection<GWASCatalog> inserting = CollectionUtils.subtract(incoming, inRgd);
         Collection<GWASCatalog> deleteMe = CollectionUtils.subtract(inRgd, incoming);
         if (deletionThresholdCheck(deleteThreshold, deleteMe.size(), inRgd.size())){
@@ -77,6 +78,19 @@ public class GWASCatImport {
                 insertExt = false;
             }
 
+            // Persist QTL ids carried over from EFO-changed rows. insertGWASBatch()
+            // assigns the gwas_id, so this must run after it; rows that were not
+            // inserted keep gwas_id 0 and are skipped.
+            List<GWASCatalog> qtlUpdates = new ArrayList<>();
+            for (GWASCatalog g : qtlCarriedOver) {
+                if (g.getGwasId() != 0) {
+                    qtlUpdates.add(g);
+                }
+            }
+            if (!qtlUpdates.isEmpty()) {
+                logger.info("- - QTL ids carried over to EFO-changed rows: " + qtlUpdates.size());
+                dao.updateGwasQtlRgdIdBatch(qtlUpdates);
+            }
 
             if (!deleteMe.isEmpty()) {
                 logger.info("- - Total objects deleted: " + deleteMe.size());
@@ -97,26 +111,96 @@ public class GWASCatImport {
         }
     }
 
-    // Logs each unique old -> new EFO id transition where an incoming record matches an
-    // existing record on every field used by GWASCatalog.equals() except efoId. Surfaces
-    // which EFO ids changed so related tables can be updated; does not mutate either
-    // collection.
-    void logEfoIdChanges(Collection<GWASCatalog> incoming, Collection<GWASCatalog> inRgd) {
+    // Reconciles incoming rows against existing RGD rows that match on every field used
+    // by GWASCatalog.equals() except efoId -- i.e. the EFO id changed for that record.
+    // For each such change this method:
+    //  (B) carries the existing QTL association from the old (soon-to-be-deleted) row
+    //      to the incoming row and clears it from the old row, so withdrawQTLs() does
+    //      not withdraw a QTL that is still in use. The returned list holds the incoming
+    //      rows whose qtl_rgd_id must be persisted (by gwas_id) after insertGWASBatch().
+    //  (A) logs each unique old -> new transition, and when the new EFO term(s) do not
+    //      carry the same ontology cross-references (synonyms) as the old one(s), logs
+    //      the missing cross-refs so curators can add the synonyms to the new EFO term.
+    List<GWASCatalog> handleEfoIdChanges(Collection<GWASCatalog> incoming, Collection<GWASCatalog> inRgd) throws Exception {
         Map<EfoMatchKey, GWASCatalog> inRgdByKey = new HashMap<>(inRgd.size() * 2);
         for (GWASCatalog gb : inRgd) {
             inRgdByKey.putIfAbsent(EfoMatchKey.of(gb), gb);
         }
+        Set<GWASCatalog> incomingSet = new HashSet<>(incoming); // gb deleted  <=> not here
+        Set<GWASCatalog> inRgdSet = new HashSet<>(inRgd);        // ga inserted <=> not here
         Set<String> loggedTransitions = new HashSet<>();
+        Map<String, Set<String>> crossRefCache = new HashMap<>();
+        List<GWASCatalog> qtlCarriedOver = new ArrayList<>();
         for (GWASCatalog ga : incoming) {
             GWASCatalog gb = inRgdByKey.get(EfoMatchKey.of(ga));
             if (gb == null) continue;
-            if (!Utils.stringsAreEqual(ga.getEfoId(), gb.getEfoId())) {
-                String key = gb.getEfoId() + " -> " + ga.getEfoId();
-                if (loggedTransitions.add(key)) {
-                    efoStatus.info("EFO id change -- old: " + gb.getEfoId() + " | new: " + ga.getEfoId());
+            if (Utils.stringsAreEqual(ga.getEfoId(), gb.getEfoId())) continue;
+
+            // (B) carry the QTL association to the incoming row and clear it from the
+            // old row -- only when the old row is actually being deleted and the
+            // incoming row is actually being inserted.
+            Integer qtlRgdId = gb.getQtlRgdId();
+            if (qtlRgdId != null && qtlRgdId != 0
+                    && !incomingSet.contains(gb) && !inRgdSet.contains(ga)) {
+                ga.setQtlRgdId(qtlRgdId);
+                gb.setQtlRgdId(null);
+                qtlCarriedOver.add(ga);
+            }
+
+            // (A) log the transition once; flag missing ontology cross-references
+            String key = gb.getEfoId() + " -> " + ga.getEfoId();
+            if (loggedTransitions.add(key)) {
+                efoStatus.info("EFO id change -- old: " + gb.getEfoId() + " | new: " + ga.getEfoId());
+                Set<String> oldXrefs = crossRefAccs(gb.getEfoId(), crossRefCache);
+                Set<String> newXrefs = crossRefAccs(ga.getEfoId(), crossRefCache);
+                if (!oldXrefs.equals(newXrefs)) {
+                    Set<String> missing = new TreeSet<>(oldXrefs);
+                    missing.removeAll(newXrefs);
+                    efoStatus.info("\tsynonyms differ -- old EFO cross-refs: " + oldXrefs
+                            + " | new EFO cross-refs: " + newXrefs
+                            + (missing.isEmpty() ? ""
+                                : " -- curator action: add as synonyms of the new EFO term: " + missing));
                 }
             }
         }
+        return qtlCarriedOver;
+    }
+
+    // Returns the set of CMO/DOID/VT/HP term accession ids that cross-reference the
+    // given efoId field (one or more ", "-separated EFO ids) as ont synonyms. Results
+    // are cached by the raw efoId field for the duration of the run.
+    private Set<String> crossRefAccs(String efoIdField, Map<String, Set<String>> cache) throws Exception {
+        if (efoIdField == null) {
+            return Collections.emptySet();
+        }
+        Set<String> cached = cache.get(efoIdField);
+        if (cached != null) {
+            return cached;
+        }
+        Set<String> accs = new TreeSet<>();
+        for (String eId : efoIdField.split(", ")) {
+            String efoId = eId.replace("_", ":").trim();
+            if (efoId.isEmpty()) {
+                continue;
+            }
+            if (!efoId.startsWith("EFO") && !efoId.startsWith("MONDO")
+                    && !efoId.startsWith("GO") && !efoId.startsWith("HP")) {
+                efoId = "EFO:" + efoId;
+            }
+            List<TermSynonym> synonyms = dao.getTermSynonymsBySynonymName(efoId);
+            if (synonyms == null) {
+                continue;
+            }
+            for (TermSynonym ts : synonyms) {
+                String acc = ts.getTermAcc();
+                if (acc != null && (acc.startsWith("CMO") || acc.startsWith("DOID")
+                        || acc.startsWith("VT") || acc.startsWith("HP"))) {
+                    accs.add(acc);
+                }
+            }
+        }
+        cache.put(efoIdField, accs);
+        return accs;
     }
 
     // Hash key matching the equality semantics previously in equalsIgnoringEfoId:

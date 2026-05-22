@@ -2,6 +2,7 @@ package edu.mcw.rgd.gwascatalog;
 
 import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.dao.impl.GWASCatalogDAO;
+import edu.mcw.rgd.dao.impl.OntologyXDAO;
 import edu.mcw.rgd.dao.impl.RGDManagementDAO;
 import edu.mcw.rgd.dao.impl.XdbIdDAO;
 import edu.mcw.rgd.dao.impl.variants.VariantDAO;
@@ -9,6 +10,7 @@ import edu.mcw.rgd.dao.spring.GWASCatalogQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
 import edu.mcw.rgd.datamodel.*;
+import edu.mcw.rgd.datamodel.ontologyx.TermSynonym;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSSId;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
@@ -32,6 +34,7 @@ public class DAO {
     VariantDAO vdao = new VariantDAO();
     private RGDManagementDAO managementDAO = new RGDManagementDAO();
     private XdbIdDAO xdao = new XdbIdDAO();
+    private OntologyXDAO odao = new OntologyXDAO();
     private int xdbKey = XdbId.XDB_KEY_GWAS;
     private Map<String, GeneCache> geneCacheMap = new HashMap<>();
 
@@ -90,6 +93,14 @@ public class DAO {
 
     public int updateGWASBatch(Collection<GWASCatalog> update) throws Exception {
         return dao.updateGWASBatch(update);
+    }
+
+    public int updateGwasQtlRgdIdBatch(Collection<GWASCatalog> update) throws Exception {
+        return dao.updateGwasQtlRgdIdBatch(update);
+    }
+
+    public List<TermSynonym> getTermSynonymsBySynonymName(String synonym) throws Exception {
+        return odao.getTermSynonymBySynonymName(synonym);
     }
 
     public List<GWASCatalog> getGWASbyRsId(String rsId) throws Exception {
