@@ -43,6 +43,10 @@ public class Manager {
                         RatGwas rg = (RatGwas) (bf.getBean("ratGwas"));
                         rg.run();
                         break;
+                    case "--ontologyList":
+                        GwasOntologyList ontologyList = (GwasOntologyList) (bf.getBean("gwasOntologyList"));
+                        ontologyList.run();
+                        break;
                 }
             }
         }

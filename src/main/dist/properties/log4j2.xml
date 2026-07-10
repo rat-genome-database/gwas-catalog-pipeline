@@ -103,6 +103,10 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+        <File name="ontologyList" append="false" fileName="logs/ontologyList.log">
+            <PatternLayout pattern="%m%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
     </Appenders>
 
     <Loggers>
@@ -162,6 +166,10 @@
         <Logger name="withdrawStatus" level="info" additivity="false">
             <AppenderRef ref="wStatus"/>
             <AppenderRef ref="wSummary"/><!-- human readable -->
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="ontologyList" level="info" additivity="false">
+            <AppenderRef ref="ontologyList"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>

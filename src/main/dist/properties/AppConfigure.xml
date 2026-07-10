@@ -19,6 +19,11 @@
         <property name="version" value="GWAS Catalog Withdraw Variants -- build 2024-05-07"/>
     </bean>
 
+    <bean id="gwasOntologyList" class="edu.mcw.rgd.gwascatalog.GwasOntologyList">
+        <property name="version" value="GWAS Catalog Ontology Term List -- build 2026-07-09"/>
+        <property name="prefix" value="OBA"/>
+    </bean>
+
     <bean id="ratGwas" class="edu.mcw.rgd.gwascatalog.RatGwas">
         <property name="version" value="GWAS Catalog Pipeline -- build 2025-03-18"/>
         <property name="ratFiles">
