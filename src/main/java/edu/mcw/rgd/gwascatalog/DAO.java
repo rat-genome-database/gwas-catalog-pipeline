@@ -204,7 +204,7 @@ public class DAO {
                 UNION ALL
                 SELECT v.*,vmd.CHROMOSOME,vmd.PADDING_BASE,vmd.END_POS,vmd.START_POS,vmd.GENIC_STATUS,vmd.MAP_KEY
                 FROM variant_ext v, variant_map_data vmd where v.rgd_id=vmd.rgd_id and vmd.map_key = ? and vmd.chromosome = ? and  vmd.start_pos=?
-                )""";
+                ) all_variants""";
         VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
         q.declareParameter(new SqlParameter(Types.VARCHAR));
